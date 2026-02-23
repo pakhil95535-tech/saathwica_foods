@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../common/controllers/auth_controller.dart';
 import '../../common/utils/constants.dart';
 import '../../routes/app_routes.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -22,9 +23,11 @@ class _CustomerRegistrationScreenState
   final _addressLine1Controller = TextEditingController();
   final _addressLine2Controller = TextEditingController();
   final _pincodeController = TextEditingController();
-  final _referralIdController = TextEditingController();
+  final _referralController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
+  final AuthController _authController = Get.find<AuthController>();
 
   @override
   void dispose() {
@@ -33,53 +36,98 @@ class _CustomerRegistrationScreenState
     _addressLine1Controller.dispose();
     _addressLine2Controller.dispose();
     _pincodeController.dispose();
-    _referralIdController.dispose();
+    _referralController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _register() {
-    // Skipping validation as requested for simple flow
-    Get.offAllNamed(AppRoutes.home);
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      Get.snackbar(
+        'Error',
+        'Passwords do not match',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: AppColors.white,
+      );
+      return;
+    }
+
+    final success = await _authController.register(
+      name: _nameController.text.trim(),
+      phone: _mobileController.text.trim(),
+      email: '', // Not required by backend
+      password: _passwordController.text.trim(),
+      userType: 'customer',
+      referralId: _referralController.text.trim(),
+      addressLine1: _addressLine1Controller.text.trim(),
+      addressLine2: _addressLine2Controller.text.trim(),
+      pincode: _pincodeController.text.trim(),
+    );
+
+    if (success) {
+      Get.offAllNamed(AppRoutes.home);
+    } else {
+      Get.snackbar(
+        'Registration Failed',
+        _authController.errorMessage.value,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: AppColors.white,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.white,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primary),
           onPressed: () => Get.back(),
         ),
         title: const Text('Register as Customer',
             style:
-                TextStyle(color: AppColors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.primary,
+                TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.white,
         elevation: 0,
         centerTitle: true,
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: _register,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.white,
-                foregroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+          child: Obx(() => SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: _authController.isLoading.value ? null : _register,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _authController.isLoading.value
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.white),
+                          ),
+                        )
+                      : const Text('Register',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
                 ),
-                elevation: 0,
-              ),
-              child: const Text('Complete Registration',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            ),
-          ),
+              )),
         ),
       ),
       body: SafeArea(
@@ -103,7 +151,7 @@ class _CustomerRegistrationScreenState
                     _buildLabel('Name'),
                     _buildTextField(_nameController, 'YOUR NAME'),
                     _buildLabel('Mobile Number'),
-                    _buildTextField(_mobileController, 'ENTER PASSOWRD',
+                    _buildTextField(_mobileController, 'ENTER MOBILE NUMBER',
                         keyboardType: TextInputType.phone),
                     _buildLabel('Address'),
                     _buildTextField(_addressLine1Controller, 'LINE 1'),
@@ -112,14 +160,15 @@ class _CustomerRegistrationScreenState
                     _buildLabel('Pin code'),
                     _buildTextField(_pincodeController, 'ENTER PINCODE',
                         keyboardType: TextInputType.number),
-                    _buildLabel('Employee Referrel ID'),
-                    _buildTextField(_referralIdController, 'ENTER REFERREL ID'),
+                    _buildLabel('Referral Code'),
+                    _buildTextField(
+                        _referralController, 'ENTER REFERRAL CODE'),
                     _buildLabel('Password'),
                     _buildTextField(_passwordController, 'ENTER PASSWORD',
                         obscureText: true),
-                    _buildLabel('Password'),
+                    _buildLabel('Confirm Password'),
                     _buildTextField(
-                        _confirmPasswordController, 'ENTER PASSWORD',
+                        _confirmPasswordController, 'CONFIRM PASSWORD',
                         obscureText: true),
                     const SizedBox(height: 40),
                   ],
@@ -138,7 +187,7 @@ class _CustomerRegistrationScreenState
       child: Text(
         text,
         style: const TextStyle(
-          color: AppColors.white,
+          color: AppColors.primary,
           fontWeight: FontWeight.bold,
           fontSize: 16,
         ),
@@ -150,27 +199,30 @@ class _CustomerRegistrationScreenState
       {bool obscureText = false, TextInputType? keyboardType}) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white.withOpacity(0.95), // Slightly more opaque
+        color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextFormField(
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.black87),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey[400], letterSpacing: 0.5),
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
+        style: const TextStyle(fontWeight: FontWeight.w500),
         validator: (value) {
           if (value == null || value.isEmpty) {
+            // Optional fields logic if any
+            if (hint == 'LINE 2' || hint == 'ENTER REFERRAL CODE') return null;
             return 'This field is required';
           }
           return null;
         },
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(
+              color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
       ),
     );
   }

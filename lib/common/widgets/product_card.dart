@@ -1,8 +1,10 @@
 // lib/widgets/product_card.dart
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../utils/constants.dart';
 import '../models/models.dart';
+import '../controllers/product_controller.dart';
 
 class ProductCard extends StatefulWidget {
   final Product product;
@@ -116,15 +118,45 @@ class _ProductCardState extends State<ProductCard>
                       right: 8,
                       child: GestureDetector(
                         onTap: () {
-                          // TODO: Implement wishlist toggle
+                          final controller = Get.find<ProductController>();
+                          controller.toggleWishlist(widget.product.id);
                         },
-                        child: const Icon(
-                          Icons.favorite_border,
-                          color: AppColors.primary, // Gold color
-                          size: 20,
-                        ),
+                        child: Obx(() {
+                          final controller = Get.find<ProductController>();
+                          final isWishlisted =
+                              controller.isInWishlist(widget.product.id);
+                          return Icon(
+                            isWishlisted
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: isWishlisted ? Colors.red : AppColors.primary,
+                            size: 20,
+                          );
+                        }),
                       ),
                     ),
+                    // Discount Badge
+                    if (widget.product.discountPercentage > 0)
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '${widget.product.discountPercentage.round()}% OFF',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -156,13 +188,27 @@ class _ProductCardState extends State<ProductCard>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '₹ ${widget.product.price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary, // Gold/Green
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (widget.product.discountPercentage > 0)
+                                Text(
+                                  '₹ ${widget.product.originalPrice.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              Text(
+                                '₹ ${widget.product.price.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary, // Gold/Green
+                                ),
+                              ),
+                            ],
                           ),
                           GestureDetector(
                             onTap: widget.onAddCart,

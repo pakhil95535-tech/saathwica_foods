@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../utils/constants.dart';
+import '../../routes/app_routes.dart';
 import '../controllers/auth_controller.dart';
 
 class SharedStaffDrawer extends StatelessWidget {
@@ -68,6 +69,22 @@ class SharedStaffDrawer extends StatelessWidget {
               onTap: () {
                 onNavigate(2);
                 Get.back();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person, color: AppColors.primary),
+              title: const Text('My Profile'),
+              onTap: () {
+                Get.back();
+                final role =
+                    authController.currentUser.value?.userType.toLowerCase() ??
+                        '';
+                if (role == 'employee') {
+                  Get.toNamed(AppRoutes.employeeProfile);
+                } else if (role == 'supervisor') {
+                  Get.toNamed(AppRoutes.supervisorProfile);
+                }
+                // Add admin case if needed
               },
             ),
             const Divider(),

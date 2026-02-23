@@ -57,17 +57,17 @@ class RegisterTypeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.white, // Changed to white
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.white, // Changed to white
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primary), // Changed to primary
           onPressed: () => Get.back(),
         ),
         title: Text(
           'Register',
-          style: AppTextStyles.headline4.copyWith(color: AppColors.white),
+          style: AppTextStyles.headline4.copyWith(color: AppColors.primary), // Changed to primary
         ),
         centerTitle: false,
       ),
@@ -96,7 +96,7 @@ class RegisterTypeScreen extends StatelessWidget {
                       Expanded(
                         child: _buildUserTypeCard(
                           title: 'Supervisor',
-                          imagePath: 'assets/images/supervisorlogo.png',
+                          imagePath: AppAssets.supervisorLogo,
                           route: AppRoutes.registerSupervisor,
                         ),
                       ),
@@ -104,7 +104,7 @@ class RegisterTypeScreen extends StatelessWidget {
                       Expanded(
                         child: _buildUserTypeCard(
                           title: 'Employee',
-                          imagePath: 'assets/images/employeelogo.png',
+                          imagePath: AppAssets.employeeLogo,
                           route: AppRoutes.registerEmployee,
                         ),
                       ),
@@ -116,7 +116,7 @@ class RegisterTypeScreen extends StatelessWidget {
                   // Customer Card (Full Width)
                   _buildUserTypeCard(
                     title: 'Customer',
-                    imagePath: 'assets/images/customer.png',
+                    imagePath: AppAssets.customerLogo,
                     route: AppRoutes.registerCustomer,
                   ),
 

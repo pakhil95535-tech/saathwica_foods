@@ -1,33 +1,49 @@
-// lib/screens/my_orders_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../common/utils/constants.dart';
 import '../../common/controllers/order_controller.dart';
+import '../../common/controllers/auth_controller.dart';
+import '../../common/models/models.dart';
 import '../../routes/app_routes.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
-class MyOrdersScreen extends StatelessWidget {
+class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final orderController = Get.put(OrderController());
+  State<MyOrdersScreen> createState() => _MyOrdersScreenState();
+}
 
+class _MyOrdersScreenState extends State<MyOrdersScreen> {
+  late final OrderController orderController;
+
+  @override
+  void initState() {
+    super.initState();
+    orderController = Get.put(OrderController());
+    // Fetch orders from API using the logged-in user's ID
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authController = Get.find<AuthController>();
+      orderController.fetchOrders(authController.userId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primary),
           onPressed: () => Get.back(),
         ),
         title: const Text(
           'My Orders',
           style: TextStyle(
-            color: AppColors.white,
+            color: AppColors.primary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -55,7 +71,10 @@ class MyOrdersScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => orderController.fetchOrders(),
+                  onPressed: () {
+                    final auth = Get.find<AuthController>();
+                    orderController.fetchOrders(auth.userId);
+                  },
                   child: const Text('Retry'),
                 ),
               ],
@@ -101,7 +120,10 @@ class MyOrdersScreen extends StatelessWidget {
         final completedOrders = orderController.completedOrders;
 
         return RefreshIndicator(
-          onRefresh: () => orderController.fetchOrders(),
+          onRefresh: () {
+            final auth = Get.find<AuthController>();
+            return orderController.fetchOrders(auth.userId);
+          },
           child: AnimationLimiter(
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -166,7 +188,7 @@ class MyOrdersScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderCard(order, bool isActive) {
+  Widget _buildOrderCard(Order order, bool isActive) {
     final orderController = Get.find<OrderController>();
     final dateFormat = DateFormat('MMM dd, yyyy • hh:mm a');
 
@@ -188,9 +210,7 @@ class MyOrdersScreen extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: isActive
-              ? () => Get.toNamed(AppRoutes.orderTracking, arguments: order)
-              : null,
+          onTap: () => Get.toNamed(AppRoutes.orderDetail, arguments: order),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -244,20 +264,36 @@ class MyOrdersScreen extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          order.items.first.product.image,
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                            width: 50,
-                            height: 50,
-                            color: AppColors.lightGray,
-                            child: const Icon(Icons.image,
-                                color: AppColors.darkGray),
-                          ),
-                        ),
+                        child: order.items.first.product.image
+                                .startsWith('http')
+                            ? Image.network(
+                                order.items.first.product.image,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  width: 50,
+                                  height: 50,
+                                  color: AppColors.lightGray,
+                                  child: const Icon(Icons.image,
+                                      color: AppColors.darkGray),
+                                ),
+                              )
+                            : Image.asset(
+                                order.items.first.product.image,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  width: 50,
+                                  height: 50,
+                                  color: AppColors.lightGray,
+                                  child: const Icon(Icons.image,
+                                      color: AppColors.darkGray),
+                                ),
+                              ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -303,52 +339,73 @@ class MyOrdersScreen extends StatelessWidget {
                     ],
                   ),
 
-                const SizedBox(height: 12),
-                const Divider(color: AppColors.mediumGray, height: 1),
-                const SizedBox(height: 12),
-
-                // Total and Action
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Amount',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                if (isActive) ...[
+                  const SizedBox(height: 12),
+                  const Divider(color: AppColors.mediumGray, height: 1),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Amount',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '₹${order.total.toStringAsFixed(2)}',
-                          style: AppTextStyles.headline4.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (isActive)
-                      ElevatedButton(
-                        onPressed: () => Get.toNamed(AppRoutes.orderTracking,
-                            arguments: order),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('Track Order'),
                       ),
-                  ],
-                ),
+                      Text(
+                        '₹${order.total.toStringAsFixed(2)}',
+                        style: AppTextStyles.headline4.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Get.toNamed(AppRoutes.orderTracking,
+                          arguments: order),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.primary),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text(
+                        'Track Order',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 12),
+                  const Divider(color: AppColors.mediumGray, height: 1),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Amount',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        '₹${order.total.toStringAsFixed(2)}',
+                        style: AppTextStyles.headline4.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

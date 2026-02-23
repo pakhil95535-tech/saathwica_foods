@@ -44,12 +44,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primary),
           onPressed: () => Get.back(),
         ),
         title: Text(
           'Order #${order.id}',
-          style: AppTextStyles.headline3.copyWith(color: AppColors.primaryDark),
+          style: AppTextStyles.headline3.copyWith(color: AppColors.primary),
         ),
         centerTitle: false,
       ),
@@ -70,7 +70,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               ),
               children: [
                 _buildTimelineItem(
-                  logo: 'assets/images/order_confirmed_logo.png',
+                  logo: AppAssets.logo,
                   icon: Icons.assignment,
                   title: 'Order Taken',
                   isCompleted: [
@@ -96,7 +96,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                   bgColor: const Color(0xFFF3E5F5),
                 ),
                 _buildTimelineItem(
-                  logo: 'assets/images/order_delivery_logo.png',
+                  logo: AppAssets.logo,
                   icon: Icons.local_shipping,
                   title: 'Order Is Being Delivered',
                   subtitle: order.status == 'in_delivery'

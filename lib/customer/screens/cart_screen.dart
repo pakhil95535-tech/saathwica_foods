@@ -19,12 +19,12 @@ class CartScreen extends StatelessWidget {
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primary),
           onPressed: () => Get.back(),
         ),
         title: Text(
           'My Cart',
-          style: AppTextStyles.headline3.copyWith(color: AppColors.primaryDark),
+          style: AppTextStyles.headline3.copyWith(color: AppColors.primary),
         ),
         centerTitle: false,
       ),
@@ -163,10 +163,24 @@ class CartScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '₹${item.product.price.toStringAsFixed(2)}',
-                    style: AppTextStyles.subtitle1
-                        .copyWith(fontWeight: FontWeight.w600),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (item.product.discountPercentage > 0)
+                        Text(
+                          '₹${item.product.originalPrice.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      Text(
+                        '₹${item.product.price.toStringAsFixed(2)}',
+                        style: AppTextStyles.subtitle1
+                            .copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ),
                   Row(
                     children: [
@@ -230,6 +244,16 @@ class CartScreen extends StatelessWidget {
   }
 
   Widget _buildOrderSummary(CartController controller) {
+    double totalSavings = controller.cart.value?.items.fold(0.0, (sum, item) {
+          if (item.product.originalPrice > item.product.price) {
+            return sum! +
+                (item.product.originalPrice - item.product.price) *
+                    item.quantity;
+          }
+          return sum;
+        }) ??
+        0.0;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -251,6 +275,24 @@ class CartScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _buildSummaryRow(AppStrings.delivery,
                 '₹${controller.deliveryCharge.toStringAsFixed(2)}'),
+            if (totalSavings > 0) ...[
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total Savings',
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(color: Colors.green, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '- ₹${totalSavings.toStringAsFixed(2)}',
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(color: Colors.green, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),

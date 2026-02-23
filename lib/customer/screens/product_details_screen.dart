@@ -105,7 +105,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios,
-                        size: 20, color: Colors.grey),
+                        size: 20, color: AppColors.primary),
                     onPressed: () => Get.back(),
                   ),
                   const Spacer(),
@@ -158,26 +158,81 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20.0, vertical: 4.0),
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: '₹ ${product.price.toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    color: priceColor,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (product.discountPercentage > 0) ...[
+                                    Text(
+                                      '₹ ${product.originalPrice.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 16,
+                                        decoration: TextDecoration.lineThrough,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              '₹ ${product.price.toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            color: priceColor,
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: '/${product.unit}',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                TextSpan(
-                                  text: '/${product.unit}',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
-                                  ),
+                                ],
+                              ),
+                              if (product.discountPercentage > 0) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '${product.discountPercentage.round()}% OFF',
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Save ₹${(product.originalPrice - product.price).toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        color: Colors.green,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
-                            ),
+                            ],
                           ),
                         ),
 
@@ -280,7 +335,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     ),
                   ),
                   Text(
-                    '₹ ${(_quantity * product.price).toStringAsFixed(0)}',
+                    '₹ ${(_quantity * product.price).toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -421,13 +476,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   ),
           ),
         ),
-        const Positioned(
+        Positioned(
           top: 20,
           right: 20,
-          child: Icon(
-            Icons.favorite_border,
-            color: Colors.white,
-            size: 28,
+          child: GestureDetector(
+            onTap: () {
+              final controller = Get.find<ProductController>();
+              controller.toggleWishlist(product.id);
+            },
+            child: Obx(() {
+              final controller = Get.find<ProductController>();
+              final isWishlisted = controller.isInWishlist(product.id);
+              return Icon(
+                isWishlisted ? Icons.favorite : Icons.favorite_border,
+                color: isWishlisted ? Colors.red : Colors.white,
+                size: 28,
+              );
+            }),
           ),
         ),
       ],
@@ -515,13 +580,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               ],
             ),
           ),
-          const Positioned(
+          Positioned(
             top: 20,
             right: 20,
-            child: Icon(
-              Icons.favorite_border,
-              color: Colors.white,
-              size: 28,
+            child: GestureDetector(
+              onTap: () {
+                final controller = Get.find<ProductController>();
+                controller.toggleWishlist(product.id);
+              },
+              child: Obx(() {
+                final controller = Get.find<ProductController>();
+                final isWishlisted = controller.isInWishlist(product.id);
+                return Icon(
+                  isWishlisted ? Icons.favorite : Icons.favorite_border,
+                  color: isWishlisted ? Colors.red : Colors.white,
+                  size: 28,
+                );
+              }),
             ),
           ),
         ],

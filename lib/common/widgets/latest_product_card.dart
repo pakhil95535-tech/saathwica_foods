@@ -86,6 +86,29 @@ class LatestProductCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 4),
+                // Price
+                Column(
+                  children: [
+                    if (product.discountPercentage > 0)
+                      Text(
+                        '₹ ${product.originalPrice.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          decoration: TextDecoration.lineThrough,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    Text(
+                      '₹ ${product.price.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20), // Spacing for button
               ],
             ),
@@ -100,6 +123,29 @@ class LatestProductCard extends StatelessWidget {
                 size: 20,
               ),
             ),
+
+            // Discount Badge
+            if (product.discountPercentage > 0)
+              Positioned(
+                top: 10,
+                left: 10,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${product.discountPercentage.round()}%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
 
             // Add Button (Bottom Right)
             Positioned(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../utils/constants.dart';
+import '../../routes/app_routes.dart';
 import '../controllers/auth_controller.dart';
 
 class CustomDrawer extends StatelessWidget {
@@ -11,6 +12,11 @@ class CustomDrawer extends StatelessWidget {
     final authController = Get.isRegistered<AuthController>()
         ? Get.find<AuthController>()
         : Get.put(AuthController());
+
+    final role =
+        (authController.currentUser.value?.userType.toLowerCase() ?? 'customer')
+            .replaceAll(' ', '')
+            .replaceAll('_', '');
 
     return Drawer(
       backgroundColor: AppColors.white,
@@ -39,51 +45,63 @@ class CustomDrawer extends StatelessWidget {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _buildExpandableMenuItem(
-                    'Curries',
-                    Icons.restaurant_menu,
-                    [
-                      'Chicken Fry',
-                      'Chicken Curry',
-                      'Mutton Curry',
-                      'Gongura Chicken',
-                      'Royyala Iguru'
-                    ],
-                  ),
-                  _buildExpandableMenuItem(
-                    'Masalas & Spices',
-                    Icons.local_fire_department,
-                    ['Gravy Powder', 'Pickle Powder', 'Biryani Masala'],
-                  ),
-                  _buildExpandableMenuItem(
-                    'Snacks',
-                    Icons.fastfood,
-                    ['Chicken 65', 'Mirchi Bajji Mix'],
-                  ),
-                  _buildExpandableMenuItem(
-                    'Pickles',
-                    Icons.food_bank,
-                    ['Gongura Pickle', 'Mango Pickle'],
-                  ),
-                  _buildMenuItem('Gravies', Icons.soup_kitchen, () {}),
-                  const Divider(thickness: 1, color: AppColors.mediumGray),
-                  _buildMenuItem('My Orders', Icons.inventory_2_outlined, () {
-                    Get.toNamed('/orders');
-                  }, iconColor: AppColors.teal),
-                  _buildMenuItem('Contact Us', Icons.phone_outlined, () {},
-                      iconColor: AppColors.teal),
-                  _buildMenuItem('Privacy Policy', Icons.lock_outlined, () {},
-                      iconColor: AppColors.teal),
-                  _buildMenuItem(
-                      'Terms and Conditions', Icons.description_outlined, () {},
-                      iconColor: AppColors.teal),
-                  _buildMenuItem('Credit Profile', Icons.credit_card, () {},
-                      iconColor: AppColors.teal),
-                  _buildMenuItem('FAQs', Icons.help_outline, () {},
-                      iconColor: AppColors.teal),
+                  if (role == 'superadmin') ...[
+                    _buildMenuItem('My Profile', Icons.person_outline, () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.superAdminProfile);
+                    }),
+                  ] else if (role == 'admin') ...[
+                    _buildMenuItem(
+                        'My Earnings', Icons.account_balance_wallet_outlined,
+                        () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.adminEarnings);
+                    }),
+                    _buildMenuItem('My Joinings', Icons.people_outline, () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.adminJoinings);
+                    }),
+                    _buildMenuItem('My Orders', Icons.inventory_2_outlined, () {
+                      Get.back();
+                      Get.toNamed('/orders');
+                    }),
+                    _buildMenuItem('My Wishlist', Icons.favorite_border, () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.wishlist);
+                    }),
+                  ] else if (role == 'employee') ...[
+                    _buildMenuItem(
+                        'My Earnings', Icons.account_balance_wallet_outlined,
+                        () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.employeeDashboard, arguments: 0);
+                    }),
+                    _buildMenuItem('My Joinings', Icons.people_outline, () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.employeeDashboard, arguments: 2);
+                    }),
+                    _buildMenuItem('My Orders', Icons.inventory_2_outlined, () {
+                      Get.back();
+                      Get.toNamed('/orders');
+                    }),
+                    _buildMenuItem('My Wishlist', Icons.favorite_border, () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.wishlist);
+                    }),
+                  ] else ...[
+                    // Customer (and others default to this)
+                    _buildMenuItem('My Orders', Icons.inventory_2_outlined, () {
+                      Get.back();
+                      Get.toNamed('/orders');
+                    }),
+                    _buildMenuItem('My Wishlist', Icons.favorite_border, () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.wishlist);
+                    }),
+                  ],
                   _buildMenuItem('Logout', Icons.logout, () {
                     authController.logout();
-                  }, textColor: AppColors.teal, iconColor: AppColors.teal),
+                  }),
                 ],
               ),
             ),
@@ -106,7 +124,8 @@ class CustomDrawer extends StatelessWidget {
   Widget _buildMenuItem(String title, IconData icon, VoidCallback onTap,
       {Color? textColor, Color? iconColor}) {
     return ListTile(
-      leading: Icon(icon, color: iconColor ?? AppColors.textPrimary, size: 24),
+      leading:
+          Icon(icon, color: iconColor ?? const Color(0xFF146B2C), size: 24),
       title: Text(
         title,
         style: AppTextStyles.bodyLarge.copyWith(
@@ -117,33 +136,6 @@ class CustomDrawer extends StatelessWidget {
       onTap: onTap,
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-    );
-  }
-
-  Widget _buildExpandableMenuItem(
-      String title, IconData icon, List<String> subItems) {
-    return ExpansionTile(
-      leading: Icon(icon, color: AppColors.textPrimary, size: 24),
-      title: Text(
-        title,
-        style: AppTextStyles.bodyLarge.copyWith(
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      childrenPadding: const EdgeInsets.only(left: 60),
-      children: subItems
-          .map((item) => ListTile(
-                title: Text(
-                  item,
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.textSecondary),
-                ),
-                onTap: () {},
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-              ))
-          .toList(),
     );
   }
 }

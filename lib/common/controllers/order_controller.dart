@@ -2,6 +2,7 @@
 
 import 'package:get/get.dart';
 import '../models/models.dart';
+import '../../services/api_service.dart';
 
 class OrderController extends GetxController {
   final orders = <Order>[].obs;
@@ -10,59 +11,45 @@ class OrderController extends GetxController {
   final orderTracking = Rxn<Map<String, dynamic>>();
   final errorMessage = ''.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    fetchOrders();
-  }
-
-  Future<void> fetchOrders({String? userId}) async {
+  Future<void> fetchOrders(String? userId) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // TODO: Replace with actual API call
-      await Future.delayed(const Duration(milliseconds: 800));
+      if (userId == null || userId.toString().isEmpty) {
+        orders.value = [];
+        return;
+      }
 
-      // Mock orders data
-      final mockOrders = [
-        Order(
-          id: 'ORD-001',
-          userId: userId ?? 'user_123',
-          items: [
-            CartItem(
-              product: Product(
-                id: '1',
-                name: 'Non-veg Gravy Powder',
-                description: 'Test',
-                price: 200.0,
-                image: 'https://via.placeholder.com/100x100',
-                category: 'Masalas',
-              ),
-              quantity: 2,
-            ),
-          ],
-          deliveryAddress: Address(
-            fullName: 'Rama Raju',
-            addressLine1: 'Sree Kuteer',
-            addressLine2: 'Street 1',
-            city: 'Visakhapatnam',
-            state: 'Andhra Pradesh',
-            pincode: '530001',
-            phone: '9248200200',
-          ),
-          deliveryType: 'standard',
-          paymentMethod: 'credit_card',
-          status: 'completed',
-          subtotal: 400.0,
-          deliveryCharge: 50.0,
-          total: 450.0,
-        ),
-      ];
+      final userIdInt = int.tryParse(userId.toString());
+      if (userIdInt == null) {
+        orders.value = [];
+        return;
+      }
 
-      orders.value = mockOrders;
+      final fetchedOrders = await ApiService.getUserOrders(userIdInt);
+
+      // Merge logic: Add new orders from server, update existing ones,
+      // and keep local orders that haven't reached the server yet.
+      final Map<String, Order> mergedMap = {
+        for (var o in orders) o.id: o,
+      };
+
+      for (var o in fetchedOrders) {
+        mergedMap[o.id] = o;
+      }
+
+      final mergedList = mergedMap.values.toList();
+      // Sort by latest first
+      mergedList.sort((a, b) => b.orderDate.compareTo(a.orderDate));
+
+      orders.assignAll(mergedList);
+    } on ApiException catch (e) {
+      errorMessage.value = e.message;
+      orders.clear();
     } catch (e) {
       errorMessage.value = 'Failed to fetch orders: ${e.toString()}';
+      orders.clear();
     } finally {
       isLoading.value = false;
     }
@@ -89,49 +76,33 @@ class OrderController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // TODO: Replace with actual API call
-      await Future.delayed(const Duration(milliseconds: 800));
+      final response = await ApiService.trackOrder(orderId);
+      orderTracking.value = response;
 
-      // Mock tracking data
-      orderTracking.value = {
-        'orderId': orderId,
-        'status': 'in_delivery',
-        'stages': [
-          {
-            'stage': 'order_taken',
-            'status': 'completed',
-            'timestamp': DateTime.now()
-                .subtract(const Duration(hours: 2))
-                .toIso8601String(),
-            'icon': 'assignment',
-          },
-          {
-            'stage': 'preparing',
-            'status': 'completed',
-            'timestamp': DateTime.now()
-                .subtract(const Duration(hours: 1))
-                .toIso8601String(),
-            'icon': 'assignment_turned_in',
-          },
-          {
-            'stage': 'in_delivery',
-            'status': 'in_progress',
-            'timestamp': DateTime.now().toIso8601String(),
-            'icon': 'two_wheeler',
-          },
-          {
-            'stage': 'delivered',
-            'status': 'pending',
-            'timestamp': null,
-            'icon': 'done_all',
-          },
-        ],
-        'deliveryAgent': {
-          'name': 'Raj Kumar',
-          'phone': '9876543210',
-          'location': {'latitude': 17.6869, 'longitude': 83.2185},
-        },
-      };
+      // Update order status if it's returned in the tracking data
+      if (response['status'] != null) {
+        final orderIndex = orders.indexWhere((o) => o.id == orderId);
+        if (orderIndex != -1) {
+          final updatedOrder = orders[orderIndex];
+          orders[orderIndex] = Order(
+            id: updatedOrder.id,
+            userId: updatedOrder.userId,
+            items: updatedOrder.items,
+            deliveryAddress: updatedOrder.deliveryAddress,
+            deliveryType: updatedOrder.deliveryType,
+            paymentMethod: updatedOrder.paymentMethod,
+            status: response['status'],
+            subtotal: updatedOrder.subtotal,
+            deliveryCharge: updatedOrder.deliveryCharge,
+            total: updatedOrder.total,
+            orderDate: updatedOrder.orderDate,
+            expectedDelivery: updatedOrder.expectedDelivery,
+            trackingId: updatedOrder.trackingId,
+            tracking: updatedOrder.tracking,
+          );
+          orders.refresh();
+        }
+      }
     } catch (e) {
       errorMessage.value = 'Failed to track order: ${e.toString()}';
     } finally {

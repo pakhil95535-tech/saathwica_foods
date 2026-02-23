@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../common/controllers/auth_controller.dart';
 import '../../common/utils/constants.dart';
 import '../../routes/app_routes.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -19,6 +20,8 @@ class _LoginScreenState extends State<LoginScreen>
   final _passwordController = TextEditingController();
   late AnimationController _floatingController;
   late Animation<Offset> _floatingAnimation;
+
+  final AuthController _authController = Get.find<AuthController>();
 
   @override
   void initState() {
@@ -45,23 +48,42 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  void _login() {
-    final userId = _userIdController.text.trim();
+  Future<void> _login() async {
+    final phone = _userIdController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (userId == 'admin@foodapp.com' && password == 'Admin@123') {
-      Get.offAllNamed(AppRoutes.adminDashboard);
+    if (phone.isEmpty || password.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please enter phone number and password',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: AppColors.white,
+      );
       return;
     }
 
-    // Existing customer/other user login logic
-    Get.offAllNamed(AppRoutes.home);
+    // Real API login
+    final success = await _authController.login(phone, password);
+
+    if (success) {
+        final route = _authController.getInitialRoute();
+        Get.offAllNamed(route);
+      } else {
+      Get.snackbar(
+        'Login Failed',
+        _authController.errorMessage.value,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: AppColors.white,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary, // Gold background
+      backgroundColor: AppColors.white, // Changed from primary to white
       body: AnimationLimiter(
         child: SingleChildScrollView(
           child: Column(
@@ -74,34 +96,30 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
               children: [
-                // Header / Illustration area (White background with rounded bottom corners)
+                // Header / Illustration area
                 Container(
-                  height: MediaQuery.of(context).size.height * 0.55,
+                  height: MediaQuery.of(context).size.height * 0.45, // Reduced height slightly
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: AppColors.white,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(40),
-                      bottomRight: Radius.circular(40),
-                    ),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const SizedBox(height: 40), // Spacer for Status Bar
-                      // Illustration
+                      // Logo
                       Padding(
                         padding: const EdgeInsets.all(20.0),
                         child: SlideTransition(
                           position: _floatingAnimation,
                           child: Image.asset(
-                            'assets/images/login_illustration.png',
-                            height: 250,
+                            AppAssets.logo,
+                            height: 180,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
                               return const Icon(
                                 Icons.shopping_basket,
-                                size: 150,
+                                size: 100,
                                 color: AppColors.primary,
                               );
                             },
@@ -112,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
 
                 // Form Area
                 Padding(
@@ -122,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen>
                     children: [
                       const Text('User ID',
                           style: TextStyle(
-                              color: AppColors.white,
+                              color: AppColors.primary, // Changed to primary
                               fontSize: 16,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 10),
@@ -132,12 +150,12 @@ class _LoginScreenState extends State<LoginScreen>
 
                       const Text('Password',
                           style: TextStyle(
-                              color: AppColors.white,
+                              color: AppColors.primary, // Changed to primary
                               fontSize: 16,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 10),
                       _buildTextField(_passwordController,
-                          'ENTER PASSOWRD', // Typo matches design image
+                          'ENTER PASSWORD', // Fixed typo
                           obscureText: true),
 
                       const SizedBox(height: 40),
@@ -146,30 +164,41 @@ class _LoginScreenState extends State<LoginScreen>
                       AnimationConfiguration.synchronized(
                         child: ScaleAnimation(
                           scale: 0.5,
-                          child: SizedBox(
-                            width: double.infinity,
-                            height: 55,
-                            child: ElevatedButton(
-                              onPressed: _login,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.white,
-                                foregroundColor: AppColors.primary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
+                          child: Obx(() => SizedBox(
+                                width: double.infinity,
+                                height: 55,
+                                child: ElevatedButton(
+                                  onPressed: _authController.isLoading.value
+                                      ? null
+                                      : _login,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary, // Changed to primary
+                                    foregroundColor: AppColors.white, // Changed to white
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: _authController.isLoading.value
+                                      ? const SizedBox(
+                                          height: 24,
+                                          width: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    AppColors.white), // Changed to white
+                                          ),
+                                        )
+                                      : const Text("Let's Continue",
+                                          style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold)),
                                 ),
-                                elevation: 0,
-                              ),
-                              child: const Text("Let's Continue",
-                                  style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                          ),
+                              )),
                         ),
                       ),
-
                       const SizedBox(height: 20),
-
                       // Register Link
                       Center(
                         child: GestureDetector(
@@ -181,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen>
                             text: const TextSpan(
                               text: "Don't have an account yet?   ",
                               style: TextStyle(
-                                  color: AppColors.white, fontSize: 14),
+                                  color: AppColors.primary, fontSize: 14), // Changed to primary
                               children: [
                                 TextSpan(
                                   text: 'Register',
@@ -211,16 +240,26 @@ class _LoginScreenState extends State<LoginScreen>
       {bool obscureText = false}) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5), // Light grey/white for input background
+        color: AppColors.primary.withOpacity(0.05), // Subtle primary tint
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.1),
+        ),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
-        style: const TextStyle(color: Colors.black87),
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
+        ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey[400]),
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

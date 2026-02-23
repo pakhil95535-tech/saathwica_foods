@@ -1,10 +1,12 @@
 // lib/utils/constants.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 
 class AppColors {
   // Primary Colors
-  static const Color primary = Color(0xFFAF8627); // Golden
+  static const Color primary = Color(0xFF146B2C); // Brand Green
   static const Color primaryDark = Color(0xFF27214D); // Dark Purple
   static const Color white = Color(0xFFFFFFFF);
   static const Color black = Color(0xFF000000);
@@ -170,7 +172,9 @@ class AppDurations {
 
 class AppStrings {
   // App Name
-  static const String appName = 'Saathwica Foods';
+  static const String appName = 'Grand Taste'; // Default / Customer
+  static const String brandLife = 'Grand Life'; // Employee / Supervisor / Admin
+  static const String newBrandName = 'Grand Life'; // Keep for backward compatibility if needed, but prefer brandLife
 
   // Auth Screens
   static const String loginTitle = 'Login';
@@ -255,33 +259,47 @@ class AppStrings {
 }
 
 class AppEndpoints {
-  static const String baseUrl = 'https://api.saathwica.com/api/v1';
+  static const String _devBase =
+      'https://single-vendor-e-commerce-node-1.onrender.com';
+  static String get baseUrl {
+    if (kIsWeb) return _devBase;
+    try {
+      if (Platform.isAndroid) {
+        return 'https://single-vendor-e-commerce-node-1.onrender.com';
+      }
+      return _devBase;
+    } catch (_) {
+      return _devBase;
+    }
+  }
 
-  // Auth Endpoints
-  static const String login = '$baseUrl/auth/login';
-  static const String register = '$baseUrl/auth/register';
-  static const String verifyOtp = '$baseUrl/auth/verify-otp';
-
-  // Product Endpoints
-  static const String products = '$baseUrl/products';
-  static const String productDetail = '$baseUrl/products';
-  static const String categories = '$baseUrl/categories';
-  static const String search = '$baseUrl/products/search';
-
-  // Cart Endpoints
-  static const String cart = '$baseUrl/cart';
-  static const String addToCart = '$baseUrl/cart/add';
-  static const String updateCart = '$baseUrl/cart/update';
-  static const String removeCart = '$baseUrl/cart/remove';
-
-  // Order Endpoints
-  static const String orders = '$baseUrl/orders';
-  static const String orderDetail = '$baseUrl/orders';
-  static const String tracking = '$baseUrl/orders/tracking';
-
-  // Payment Endpoints
-  static const String payment = '$baseUrl/payment';
-  static const String paymentMethods = '$baseUrl/payment-methods';
+  static String get createUser => '$baseUrl/auth/create-users';
+  static String get createCustomer => '$baseUrl/auth/create-customer';
+  static String get createEmployee => '$baseUrl/auth/create-employee';
+  static String get createSupervisor => '$baseUrl/auth/create-supervisor';
+  static String get loginUser => '$baseUrl/auth/login-user';
+  static String get adminSignup => '$baseUrl/auth/signup-admin';
+  static String get userDetails => '$baseUrl/user/user-details';
+  static String get userOrders => '$baseUrl/user';
+  static String get products => '$baseUrl/products';
+  static String get productDetail => '$baseUrl/products';
+  static String get categories => '$baseUrl/categories';
+  static String get search => '$baseUrl/products/search';
+  static String get cart => '$baseUrl/cart';
+  static String get addToCart => '$baseUrl/cart/add';
+  static String get updateCart => '$baseUrl/cart/update';
+  static String get removeCart => '$baseUrl/cart/remove';
+  static String get orders => '$baseUrl/orders';
+  static String get orderDetail => '$baseUrl/update-order';
+  static String get tracking => '$baseUrl/orders/tracking';
+  static String get payment => '$baseUrl/payment';
+  static String get paymentMethods => '$baseUrl/payment-methods';
+  static String get addAddress => '$baseUrl/add-address';
+  static String get updateAddress => '$baseUrl/user/update-address';
+  static String get deleteAddress => '$baseUrl/delete-address';
+  static String get getUserAddresses => '$baseUrl/get-addresses';
+  static String get fetchProducts => '$baseUrl/product/fetch-products';
+  static String get createOrder => '$baseUrl/order/place-order';
 }
 
 class AppValidations {
@@ -296,4 +314,16 @@ class AppValidations {
   );
 
   static final RegExp pincodeRegex = RegExp(r'^[0-9]{6}$');
+}
+
+class AppAssets {
+  static const String logo = 'assets/icons/new_logo.png'; // Grand Taste Logo
+  static const String grandTasteLogo = 'assets/icons/new_logo.png';
+  static const String grandLifeLogo = 'assets/icons/grand_life.png';
+  static const String appLogo = 'assets/icons/grand_life.png'; // Default for internal dashboards
+  
+  // Role-specific logos
+  static const String customerLogo = 'assets/images/customerlogo.png';
+  static const String supervisorLogo = 'assets/images/supervisorlogo.png';
+  static const String employeeLogo = 'assets/images/employeelogo.png';
 }

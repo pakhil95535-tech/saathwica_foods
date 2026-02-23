@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../common/controllers/auth_controller.dart';
 import '../../common/utils/constants.dart';
-import '../../routes/app_routes.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class SupervisorRegistrationScreen extends StatefulWidget {
@@ -26,6 +26,8 @@ class _SupervisorRegistrationScreenState
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  final AuthController _authController = Get.find<AuthController>();
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -39,47 +41,93 @@ class _SupervisorRegistrationScreenState
     super.dispose();
   }
 
-  void _register() {
-    // Skipping validation as requested for simple flow
-    Get.offAllNamed(AppRoutes.supervisorDashboard);
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      Get.snackbar(
+        'Error',
+        'Passwords do not match',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: AppColors.white,
+      );
+      return;
+    }
+
+    final success = await _authController.register(
+      name: _nameController.text.trim(),
+      phone: _mobileController.text.trim(),
+      email: '', // Not required by backend
+      password: _passwordController.text.trim(),
+      userType: 'supervisor',
+      referralId: _adminReferralIdController.text.trim(),
+      addressLine1: _addressLine1Controller.text.trim(),
+      addressLine2: _addressLine2Controller.text.trim(),
+      pincode: _pincodeController.text.trim(),
+    );
+
+    if (success) {
+      final route = _authController.getInitialRoute();
+      Get.offAllNamed(route);
+    } else {
+      Get.snackbar(
+        'Registration Failed',
+        _authController.errorMessage.value,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: AppColors.white,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.white, // Changed to white
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primary), // Changed to primary
           onPressed: () => Get.back(),
         ),
         title: const Text('Register as Supervisor',
             style:
-                TextStyle(color: AppColors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.primary,
+                TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)), // Changed to primary
+        backgroundColor: AppColors.white, // Changed to white
         elevation: 0,
         centerTitle: true,
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: _register,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.white,
-                foregroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+          child: Obx(() => SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: _authController.isLoading.value ? null : _register,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary, // Changed to primary
+                    foregroundColor: AppColors.white, // Changed to white
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _authController.isLoading.value
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.white), // Changed to white
+                          ),
+                        )
+                      : const Text('Register',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
                 ),
-                elevation: 0,
-              ),
-              child: const Text('Register',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            ),
-          ),
+              )),
         ),
       ),
       body: SafeArea(
@@ -103,7 +151,7 @@ class _SupervisorRegistrationScreenState
                     _buildLabel('Name'),
                     _buildTextField(_nameController, 'YOUR NAME'),
                     _buildLabel('Mobile Number'),
-                    _buildTextField(_mobileController, 'ENTER PASSOWRD',
+                    _buildTextField(_mobileController, 'ENTER MOBILE NUMBER',
                         keyboardType: TextInputType.phone),
                     _buildLabel('Address'),
                     _buildTextField(_addressLine1Controller, 'LINE 1'),
@@ -112,15 +160,15 @@ class _SupervisorRegistrationScreenState
                     _buildLabel('Pin code'),
                     _buildTextField(_pincodeController, 'ENTER PINCODE',
                         keyboardType: TextInputType.number),
-                    _buildLabel('Admin Referrel ID'),
+                    _buildLabel('Super Admin Referral Code'),
                     _buildTextField(
-                        _adminReferralIdController, 'ENTER REFERREL ID'),
+                        _adminReferralIdController, 'ENTER REFERRAL CODE'),
                     _buildLabel('Password'),
                     _buildTextField(_passwordController, 'ENTER PASSWORD',
                         obscureText: true),
-                    _buildLabel('Password'),
+                    _buildLabel('Confirm Password'),
                     _buildTextField(
-                        _confirmPasswordController, 'ENTER PASSWORD',
+                        _confirmPasswordController, 'CONFIRM PASSWORD',
                         obscureText: true),
                     const SizedBox(height: 40),
                   ],
@@ -139,7 +187,7 @@ class _SupervisorRegistrationScreenState
       child: Text(
         text,
         style: const TextStyle(
-          color: AppColors.white,
+          color: AppColors.primary, // Changed to primary
           fontWeight: FontWeight.bold,
           fontSize: 16,
         ),
@@ -151,7 +199,7 @@ class _SupervisorRegistrationScreenState
       {bool obscureText = false, TextInputType? keyboardType}) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white.withOpacity(0.95),
+        color: AppColors.mediumGray, // Changed to mediumGray
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextFormField(

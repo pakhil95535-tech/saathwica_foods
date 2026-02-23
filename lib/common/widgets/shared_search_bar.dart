@@ -6,6 +6,7 @@ class SharedSearchBar extends StatelessWidget {
   final VoidCallback? onFilterTap;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
+  final int activeFilterCount;
 
   const SharedSearchBar({
     super.key,
@@ -13,6 +14,7 @@ class SharedSearchBar extends StatelessWidget {
     this.onFilterTap,
     this.onChanged,
     this.onSubmitted,
+    this.activeFilterCount = 0,
   });
 
   @override
@@ -59,14 +61,48 @@ class SharedSearchBar extends StatelessWidget {
                 ),
               ),
             ),
-            if (onFilterTap != null)
-              GestureDetector(
-                onTap: onFilterTap,
-                child: const Icon(Icons.tune, color: Colors.white, size: 24),
-              )
-            else
-              const Icon(Icons.horizontal_distribute,
-                  color: Colors.white, size: 24),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: onFilterTap,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.filter_list,
+                        color: Colors.white, size: 22),
+                  ),
+                  if (activeFilterCount > 0)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$activeFilterCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

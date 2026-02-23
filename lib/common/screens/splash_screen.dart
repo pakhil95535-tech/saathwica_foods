@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../routes/app_routes.dart';
-import '../utils/constants.dart';
+import '../../common/utils/constants.dart';
+import '../controllers/auth_controller.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -55,7 +55,9 @@ class _SplashScreenState extends State<SplashScreen>
   void _startTimer() {
     // Requirements: Splash screen displays for at least 3 seconds
     Timer(const Duration(seconds: 3), () {
-      Get.offNamed(AppRoutes.welcome);
+      final auth = Get.find<AuthController>();
+      final route = auth.getInitialRoute();
+      Get.offAllNamed(route);
     });
   }
 
@@ -70,7 +72,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor:
-          AppColors.primary, // Using primary Gold color as background
+          AppColors.white, // Using White as background
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -89,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen>
                 children: [
                   // Logo
                   Image.asset(
-                    'assets/images/splash_logo.png',
+                    AppAssets.grandTasteLogo,
                     width: 300,
                     height: 300,
                     fit: BoxFit.contain,
@@ -97,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
                       return const Icon(
                         Icons.eco,
                         size: 100,
-                        color: AppColors.white,
+                        color: AppColors.primary,
                       );
                     },
                   ),

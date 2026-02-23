@@ -101,13 +101,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary, // Gold background
+      backgroundColor: AppColors.white, // White background
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
           child: Column(
             children: [
-              // Top White Card with Logo
+              // Top Card with Logo
               Expanded(
                 flex: 3,
                 child: Container(
@@ -137,7 +137,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             child: FadeTransition(
                               opacity: _fadeAnimation,
                               child: Image.asset(
-                                'assets/images/welcome_logo.png',
+                                AppAssets.grandTasteLogo,
                                 width: 200,
                                 height: 200,
                                 fit: BoxFit.contain,
@@ -162,7 +162,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           width: 220,
                           height: 15,
                           decoration: BoxDecoration(
-                            color: Colors.grey.withValues(alpha: 0.3),
+                            color: Colors.grey.withValues(alpha: 0.1),
                             borderRadius: const BorderRadius.all(
                                 Radius.elliptical(220, 15)),
                           ),
@@ -191,7 +191,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.white,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -206,7 +206,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           'We deliver the best and freshest fruit salad in town.\nOrder for a combo today!!!',
                           style: TextStyle(
                             fontSize: 15,
-                            color: AppColors.white.withValues(alpha: 0.9),
+                            color: AppColors.textSecondary,
                             height: 1.4,
                           ),
                         ),
@@ -220,29 +220,33 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       position: _slideAnimationButton,
                       child: FadeTransition(
                         opacity: _fadeAnimation,
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Get.toNamed(AppRoutes.login);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.white,
-                              foregroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              height: 56,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Get.toNamed(AppRoutes.login);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: const Text(
+                                  'Sign In',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                              elevation: 0,
                             ),
-                            child: const Text(
-                              'Get Started',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                          ],
                         ),
                       ),
                     ),
