@@ -33,13 +33,6 @@ class _UnifiedHomeSectionState extends State<UnifiedHomeSection>
     'Others'
   ];
 
-  final List<Color> _pastelColors = [
-    const Color(0xFFFFF9E6),
-    const Color(0xFFFCE4EC),
-    const Color(0xFFF3E5F5),
-    const Color(0xFFE8F5E9),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -212,31 +205,39 @@ class _UnifiedHomeSectionState extends State<UnifiedHomeSection>
                         ),
                       );
                     }
-                    return GridView.builder(
+                      final mediaWidth = MediaQuery.of(context).size.width;
+                      int crossAxisCount = 2;
+                      if (mediaWidth >= 1024) {
+                        crossAxisCount = 4;
+                      } else if (mediaWidth >= 720) {
+                        crossAxisCount = 3;
+                      }
+                      const horizontalPadding = 20.0;
+                      const spacing = 15.0;
+                      final tileWidth = (mediaWidth - (horizontalPadding * 2) - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+                      final tileHeight = tileWidth * 1.42;
+                      final aspectRatio = tileWidth / tileHeight;
+                      return GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.85,
-                        crossAxisSpacing: 15,
-                        mainAxisSpacing: 15,
-                      ),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: aspectRatio,
+                          crossAxisSpacing: spacing,
+                          mainAxisSpacing: spacing,
+                        ),
                       itemCount: productController.filteredProducts.length,
                       itemBuilder: (context, index) {
                         final product =
                             productController.filteredProducts[index];
-                        final color =
-                            _pastelColors[index % _pastelColors.length];
                         return AnimationConfiguration.staggeredGrid(
                           position: index,
                           duration: const Duration(milliseconds: 375),
                           columnCount: 2,
                           child: ScaleAnimation(
                             child: FadeInAnimation(
-                              child: LatestProductCard(
-                                product: product,
-                                backgroundColor: color,
+                                child: LatestProductCard(
+                                  product: product,
                                 onTap: () => Get.toNamed(
                                     AppRoutes.productDetail,
                                     arguments: product),

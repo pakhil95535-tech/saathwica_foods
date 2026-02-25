@@ -25,6 +25,8 @@ class _SupervisorRegistrationScreenState
   final _adminReferralIdController = TextEditingController(); // Added
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _showPassword = false;
+  bool _showConfirmPassword = false;
 
   final AuthController _authController = Get.find<AuthController>();
 
@@ -164,12 +166,37 @@ class _SupervisorRegistrationScreenState
                     _buildTextField(
                         _adminReferralIdController, 'ENTER REFERRAL CODE'),
                     _buildLabel('Password'),
-                    _buildTextField(_passwordController, 'ENTER PASSWORD',
-                        obscureText: true),
+                    _buildTextField(
+                      _passwordController,
+                      'ENTER PASSWORD',
+                      obscureText: !_showPassword,
+                      suffix: IconButton(
+                        icon: Icon(
+                          _showPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: AppColors.primary,
+                        ),
+                        onPressed: () =>
+                            setState(() => _showPassword = !_showPassword),
+                      ),
+                    ),
                     _buildLabel('Confirm Password'),
                     _buildTextField(
-                        _confirmPasswordController, 'CONFIRM PASSWORD',
-                        obscureText: true),
+                      _confirmPasswordController,
+                      'CONFIRM PASSWORD',
+                      obscureText: !_showConfirmPassword,
+                      suffix: IconButton(
+                        icon: Icon(
+                          _showConfirmPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: AppColors.primary,
+                        ),
+                        onPressed: () => setState(
+                            () => _showConfirmPassword = !_showConfirmPassword),
+                      ),
+                    ),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -196,7 +223,7 @@ class _SupervisorRegistrationScreenState
   }
 
   Widget _buildTextField(TextEditingController controller, String hint,
-      {bool obscureText = false, TextInputType? keyboardType}) {
+      {bool obscureText = false, TextInputType? keyboardType, Widget? suffix}) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.mediumGray, // Changed to mediumGray
@@ -213,6 +240,7 @@ class _SupervisorRegistrationScreenState
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          suffixIcon: suffix,
         ),
         validator: (value) {
           if (value == null || value.isEmpty) {

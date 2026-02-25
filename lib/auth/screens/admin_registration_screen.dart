@@ -24,6 +24,8 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
   final _referralCodeController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _showPassword = false;
+  bool _showConfirmPassword = false;
 
   final AuthController _authController = Get.find<AuthController>();
 
@@ -185,12 +187,37 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
                     _buildTextField(
                         _referralCodeController, 'ENTER REFERRAL CODE'),
                     _buildLabel('Password'),
-                    _buildTextField(_passwordController, 'ENTER PASSWORD',
-                        obscureText: true),
+                    _buildTextField(
+                      _passwordController,
+                      'ENTER PASSWORD',
+                      obscureText: !_showPassword,
+                      suffix: IconButton(
+                        icon: Icon(
+                          _showPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: AppColors.primary,
+                        ),
+                        onPressed: () =>
+                            setState(() => _showPassword = !_showPassword),
+                      ),
+                    ),
                     _buildLabel('Confirm Password'),
                     _buildTextField(
-                        _confirmPasswordController, 'CONFIRM PASSWORD',
-                        obscureText: true),
+                      _confirmPasswordController,
+                      'CONFIRM PASSWORD',
+                      obscureText: !_showConfirmPassword,
+                      suffix: IconButton(
+                        icon: Icon(
+                          _showConfirmPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          color: AppColors.primary,
+                        ),
+                        onPressed: () => setState(
+                            () => _showConfirmPassword = !_showConfirmPassword),
+                      ),
+                    ),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -217,7 +244,7 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
   }
 
   Widget _buildTextField(TextEditingController controller, String hint,
-      {bool obscureText = false, TextInputType? keyboardType}) {
+      {bool obscureText = false, TextInputType? keyboardType, Widget? suffix}) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white.withOpacity(0.95),
@@ -234,6 +261,7 @@ class _AdminRegistrationScreenState extends State<AdminRegistrationScreen> {
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          suffixIcon: suffix,
         ),
         validator: (value) {
           if (value == null || value.isEmpty) {

@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _passwordController = TextEditingController();
   late AnimationController _floatingController;
   late Animation<Offset> _floatingAnimation;
+  bool _showPassword = false;
 
   final AuthController _authController = Get.find<AuthController>();
 
@@ -154,9 +155,21 @@ class _LoginScreenState extends State<LoginScreen>
                               fontSize: 16,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 10),
-                      _buildTextField(_passwordController,
-                          'ENTER PASSWORD', // Fixed typo
-                          obscureText: true),
+                      _buildTextField(
+                        _passwordController,
+                        'ENTER PASSWORD',
+                        obscureText: !_showPassword,
+                        suffix: IconButton(
+                          icon: Icon(
+                            _showPassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: AppColors.primary,
+                          ),
+                          onPressed: () =>
+                              setState(() => _showPassword = !_showPassword),
+                        ),
+                      ),
 
                       const SizedBox(height: 40),
 
@@ -237,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildTextField(TextEditingController controller, String hint,
-      {bool obscureText = false}) {
+      {bool obscureText = false, Widget? suffix}) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.05), // Subtle primary tint
@@ -263,6 +276,7 @@ class _LoginScreenState extends State<LoginScreen>
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          suffixIcon: suffix,
         ),
       ),
     );

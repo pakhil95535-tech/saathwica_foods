@@ -87,9 +87,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       return const Scaffold(body: Center(child: Text("Product not found")));
     }
 
-    // Specific colors from screenshot
-    const Color productCardBg =
-        Color(0xFF8B7328); // Gold/Olive background
+    // Plain background (no gold/brown wrappers)
+    const Color productCardBg = Colors.transparent;
     const Color priceColor = Color(0xFF4CAF50); // Green text
 
     return Scaffold(
@@ -403,9 +402,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
     return Column(
       children: [
-        SizedBox(
-          height: 380, // Increased height for instructions
-          width: double.infinity,
+        AspectRatio(
+          aspectRatio: 16 / 9,
           child: PageView(
             controller:
                 PageController(viewportFraction: 0.92), // Slight spacing
@@ -450,31 +448,29 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: bgColor,
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(40.0),
-            child: (imageUrl.startsWith('http'))
-                ? Image.network(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: Colors.white54,
-                    ),
-                  )
-                : Image.asset(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: Colors.white54,
-                    ),
+          alignment: Alignment.center,
+          child: (imageUrl.startsWith('http'))
+              ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: Colors.black26,
                   ),
-          ),
+                )
+              : Image.asset(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: Colors.black26,
+                  ),
+                ),
         ),
         Positioned(
           top: 20,
