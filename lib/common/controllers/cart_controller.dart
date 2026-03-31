@@ -18,6 +18,9 @@ class CartController extends GetxController {
   final selectedDeliveryType = 'standard'.obs;
   final selectedPaymentMethod = Rxn<PaymentMethod>();
   final errorMessage = ''.obs;
+  final lastPaymentStatus = ''.obs;
+  final lastTransactionId = ''.obs;
+  final lastPaymentMethod = ''.obs;
 
   @override
   void onInit() {
@@ -129,6 +132,18 @@ class CartController extends GetxController {
     }
   }
 
+  void updateUserId(String userId) {
+    if (cart.value != null) {
+      cart.value = Cart(
+        userId: userId,
+        items: cart.value!.items,
+        deliveryCharge: cart.value!.deliveryCharge,
+      );
+    } else {
+      cart.value = Cart(userId: userId, items: []);
+    }
+  }
+
   void setDeliveryType(String type) {
     selectedDeliveryType.value = type;
     _updateDeliveryCharge();
@@ -162,6 +177,16 @@ class CartController extends GetxController {
 
   void setSelectedPaymentMethod(PaymentMethod paymentMethod) {
     selectedPaymentMethod.value = paymentMethod;
+  }
+
+  void setPaymentResult({
+    required String status,
+    required String transactionId,
+    required String method,
+  }) {
+    lastPaymentStatus.value = status;
+    lastTransactionId.value = transactionId;
+    lastPaymentMethod.value = method;
   }
 
   /// Add a new address.

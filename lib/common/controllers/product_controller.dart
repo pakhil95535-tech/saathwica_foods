@@ -1,6 +1,8 @@
-// Product controller (development: uses local assets only)
+// Product controller
 import 'package:get/get.dart';
 import '../models/models.dart';
+import '../../services/api_service.dart';
+import 'auth_controller.dart';
 
 class ProductController extends GetxController {
   final RxList<Product> products = <Product>[].obs;
@@ -32,121 +34,66 @@ class ProductController extends GetxController {
     fetchProducts();
   }
 
-  void _loadMockProducts() {
-    products.value = [
-  Product(
-    id: 'p1',
-    name: 'Mango Pickle Mix Powder',
-    description: 'A traditional and aromatic spice blend crafted to prepare authentic mango pickle at home.Made with carefully selected premium spices to deliver the perfect balance of spice, tanginess, and rich flavor.Enhances the natural taste of raw mango pieces while giving a homemade pickle aroma.Easy to use – simply mix with fresh mango pieces and oil for a delicious, traditional pickle.Free from artificial colors and preservatives.Perfect to enjoy with hot rice, dosa, chapati, curd rice, or any Indian meal.',
-    price: 129.0,
-    originalPrice: 150.0,
-    discountPercentage: 10,
-    image: 'assets/images/Mango pickle mix powder.png',
-    images: ['assets/images/Mango pickle mix powder.png','assets/images/WhatsApp Image 2026-02-20 at 20.11.42 (1).jpeg'],
-    category: 'Pickles',
-    unit: '500g',
-  ),
-
-  Product(
-    id: 'p2',
-    name: 'Non Veg Fry Powder',
-    description: 'A bold and flavorful spice blend specially crafted for perfectly seasoned non-veg fries.Made with a balanced mix of premium spices to enhance the natural taste of chicken, mutton, fish, or prawns.Delivers a rich aroma, vibrant color, and authentic homemade flavor in every bite.Ideal for shallow fry, deep fry, or pan roast preparations.Easy to use – simply marinate with ginger-garlic paste and salt, coat evenly, and fry to perfection.Free from artificial colors and preservatives.Perfect for serving as a starter, side dish, or party special.',
-    price: 249.0,
-    originalPrice: 300.0,
-    discountPercentage: 10,
-    image: 'assets/images/Non veg Fry Powder.png',
-    images: ['assets/images/Non veg Fry Powder.png','assets/images/WhatsApp Image 2026-02-20 at 20.11.52 (2).jpeg'],
-    category: 'Masalas',
-    unit: '500g',
-  ),
-
-  Product(
-    id: 'p3',
-    name: 'Chicken Pickle Mix Powder',
-    description: 'Perfect blend for chicken pickle.A rich and aromatic spice blend specially crafted to prepare authentic chicken pickle at home.Made with carefully selected premium spices to deliver the perfect balance of heat, tanginess, and bold flavor.Enhances the natural taste of chicken while giving a traditional homemade pickle aroma.Easy to use – simply mix with cooked chicken pieces and oil to create a delicious, long-lasting pickle.Free from artificial colors and preservatives.Perfect to enjoy with hot rice, chapati, dosa, or as a spicy side dish for any meal.',
-    price: 210.0,
-    originalPrice: 240.0,
-    discountPercentage: 12,
-    image: 'assets/images/Chickek Pickle Mix Powder.png',
-    images: ['assets/images/Chickek Pickle Mix Powder.png','assets/images/WhatsApp Image 2026-02-20 at 20.11.52.jpeg'],
-    category: 'Pickles',
-    unit: '500g',
-  ),
-
-  Product(
-    id: 'p4',
-    name: 'Cher Taste Ghee Biryani Kit',
-    description: 'Complete kit for hotel-style biryani.A complete and aromatic biryani kit crafted to prepare rich and flavorful ghee biryani with ease.Carefully blended premium spices deliver an authentic taste, royal aroma, and perfect balance of flavors.Infused with the richness of ghee to enhance every grain of rice with traditional biryani essence.Ideal for preparing chicken, mutton, or veg ghee biryani at home.',
-    price: 299.0,
-    originalPrice: 349.0,
-    discountPercentage: 14,
-    image: 'assets/images/Cher Taste Ghee Biryani Kit.png',
-    images: ['assets/images/Cher Taste Ghee Biryani Kit.png','assets/images/WhatsApp Image 2026-02-20 at 20.11.52 (1).jpeg'],
-    category: 'Biryani Kits',
-    unit: '1kg',
-  ),
-
-  Product(
-    id: 'p5',
-    name: 'Non-Veg Gravy Powder',
-    description: 'Rich spice mix for meat gravies.A rich and aromatic spice blend specially crafted to prepare delicious non-veg gravies with authentic taste.Made from carefully selected premium spices to deliver a perfect balance of flavor, color, and aroma.Enhances the natural taste of chicken, mutton, fish, or prawns with a smooth and flavorful gravy base.Free from artificial colors and preservatives.Perfect for everyday meals and special occasions.',
-    price: 189.0,
-    originalPrice: 220.0,
-    discountPercentage: 13,
-    image: 'assets/images/Non veg Fry Powder.png',
-    images: ['assets/images/Non veg Fry Powder.png','assets/images/non_veg_gravy_info.jpg'],
-    category: 'Masalas',
-    unit: 'per unit',
-  ),
-
-  Product(
-    id: 'p6',
-    name: 'Prawns pickle mix Powder',
-    description: 'A flavorful and aromatic spice blend specially crafted for preparing authentic and delicious prawns pickle at home.A rich and aromatic spice blend specially formulated to prepare authentic prawns pickle with ease.Made from carefully selected premium spices to deliver a perfect balance of heat, tanginess, and depth of flavor.Enhances the natural taste of prawns while giving a traditional homemade pickle aroma.',
-    price: 199.0,
-    originalPrice: 230.0,
-    discountPercentage: 14,
-    image: 'assets/images/Prawns pickle mix Powder.png',
-    images: ['assets/images/Prawns pickle mix Powder.png','assets/images/PPMP.jpeg'],
-    category: 'Masalas',
-    unit: 'per unit',
-  ),
-
-  Product(
-    id: 'p7',
-    name: 'Cashew & Poppy Non Gravy Powder',
-    description: 'Cashew & Poppy Non Gravy Powder is a rich and aromatic spice blend crafted to prepare creamy and flavorful non-veg gravies with ease. Made with premium-quality cashew and poppy seeds along with carefully selected spices, it delivers a smooth texture, mild sweetness, and authentic taste. This blend enhances the richness of chicken, mutton, or other non-veg dishes, giving them a restaurant-style finish at home. Easy to use and perfectly balanced in flavor, it helps create thick, delicious gravies that pair wonderfully with rice, roti, chapati, or biryani. Free from artificial colors and preservatives.',
-    price: 179.0,
-    originalPrice: 210.0,
-    discountPercentage: 15,
-    image: 'assets/images/Cashew & Poppy Non Gravy Powder.png',
-    images: ['assets/images/Cashew & Poppy Non Gravy Powder.png','assets/images/WhatsApp Image 2026-02-20 at 20.11.52.jpeg'],
-    category: 'Masalas',
-    unit: 'per unit',
-  ),
-  Product(
-    id: 'p8',
-    name: 'Cashew & Poppy Non Gravy Powder',
-    description: 'Cashew & Poppy Non Gravy Powder is a rich and aromatic spice blend crafted to prepare creamy and flavorful non-veg gravies with ease. Made with premium-quality cashew and poppy seeds along with carefully selected spices, it delivers a smooth texture, mild sweetness, and authentic taste. This blend enhances the richness of chicken, mutton, or other non-veg dishes, giving them a restaurant-style finish at home. Easy to use and perfectly balanced in flavor, it helps create thick, delicious gravies that pair wonderfully with rice, roti, chapati, or biryani. Free from artificial colors and preservatives.',
-    price: 179.0,
-    originalPrice: 210.0,
-    discountPercentage: 15,
-    image: 'assets/images/Cashew & Poppy Non Gravy Powder.png',
-    images: ['assets/images/Cashew & Poppy Non Gravy Powder.png','assets/images/WhatsApp Image 2026-02-20 at 20.11.52.jpeg'],
-    category: 'Masalas',
-    unit: 'per unit',
-  ),
-];
-
-    filteredProducts.value =
-        products.where((p) => p.category == selectedCategory.value).toList();
+  void _applyRolePricing(List<Product> list) {
+    String role = 'customer';
+    if (Get.isRegistered<AuthController>()) {
+      final r = Get.find<AuthController>().currentUser.value?.userType;
+      if (r != null && r.isNotEmpty) {
+        role = r.toLowerCase();
+      }
+    }
+    for (final p in list) {
+      double displayPrice = p.price4 ?? p.price;
+      if (role == 'admin' || role == 'superadmin') {
+        displayPrice = p.price1 ?? p.price;
+      } else if (role == 'employee') {
+        displayPrice = p.price;
+      } else if (role == 'supervisor') {
+        displayPrice = p.price3 ?? p.price;
+      } else {
+        displayPrice = p.price4 ?? p.price;
+      }
+      final idx = list.indexOf(p);
+      list[idx] = Product(
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: displayPrice,
+        originalPrice: p.originalPrice,
+        discountPercentage: p.discountPercentage,
+        image: p.image,
+        images: p.images,
+        category: p.category,
+        unit: p.unit,
+        rating: p.rating,
+        reviewCount: p.reviewCount,
+        isAvailable: p.isAvailable,
+        sku: p.sku,
+        size: p.size,
+        tags: p.tags,
+        instructions: p.instructions,
+        price1: p.price1,
+        price2: p.price2,
+        price3: p.price3,
+        price4: p.price4,
+        createdAt: p.createdAt,
+      );
+    }
   }
 
   Future<void> fetchProducts() async {
     isLoading.value = true;
     errorMessage.value = '';
-    _loadMockProducts();
-    isLoading.value = false;
+    try {
+      final list = await ApiService.fetchProducts();
+      _applyRolePricing(list);
+      products.value = list;
+      _filterProducts(); // Ensure initial filtering
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   void setCategory(String category) {

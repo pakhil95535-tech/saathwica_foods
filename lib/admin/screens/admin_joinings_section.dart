@@ -1,31 +1,132 @@
 // lib/screens/admin/admin_joinings_section.dart
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../common/controllers/auth_controller.dart';
+import '../../common/models/joinings.dart';
+import '../../services/earnings_service.dart';
 import '../../common/utils/constants.dart';
-import '../../common/widgets/role_specific_avatar.dart';
+import 'package:intl/intl.dart';
 
-class AdminJoiningsSection extends StatelessWidget {
+class AdminJoiningsSection extends StatefulWidget {
   final VoidCallback onBackPressed;
   const AdminJoiningsSection({super.key, required this.onBackPressed});
 
   @override
+  State<AdminJoiningsSection> createState() => _AdminJoiningsSectionState();
+}
+
+class _AdminJoiningsSectionState extends State<AdminJoiningsSection> {
+  final _auth = Get.find<AuthController>();
+  JoiningsSummary? _summary;
+  bool _loading = false;
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    final idStr = _auth.currentUser.value?.id ?? '';
+    final role = _auth.currentUser.value?.userType.toLowerCase() ?? 'admin';
+    final referralCode = _auth.currentUser.value?.referralId ?? ''; // Using referral ID as code
+
+    final id = int.tryParse(idStr);
+    if (id == null) {
+      setState(() {
+        _error = 'Invalid user';
+      });
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      // Pass referral code to service for strict filtering
+      final s = await EarningsService.fetchJoinings(
+        userId: id,
+        role: role,
+        referralCode: referralCode,
+      );
+      setState(() => _summary = s);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_error, style: const TextStyle(color: Colors.red)),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _fetch,
+              child: const Text('Retry'),
+            )
+          ],
+        ),
+      );
+    }
+
+    final total = _summary?.total ?? 0;
+    final joinings = _summary?.joinings ?? [];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(context),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                _buildTotalCard(),
-                const SizedBox(height: 30),
-                _buildRecentJoiningsSection(),
-                const SizedBox(height: 20),
-              ],
+          child: RefreshIndicator(
+            onRefresh: _fetch,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  _buildTotalCard(total),
+                  const SizedBox(height: 30),
+                  const Text(
+                    'Recent joinings',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  if (joinings.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: Text('No joinings yet'),
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: joinings.length,
+                      itemBuilder: (context, index) {
+                        return _buildJoinTile(joinings[index]);
+                      },
+                    ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),
@@ -44,55 +145,59 @@ class AdminJoiningsSection extends StatelessWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back_ios,
-                color: Color(0xFF8B6C3F), size: 20),
-            onPressed: onBackPressed,
+                color: AppColors.primary, size: 20),
+            onPressed: widget.onBackPressed,
           ),
           const Expanded(
             child: Center(
               child: Text(
-                'My joinings',
+                'My Joinings',
                 style: TextStyle(
-                  color: Color(0xFF1A3358),
+                  color: AppColors.primary,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 48),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.primary, size: 22),
+            onPressed: _fetch,
+            tooltip: 'Refresh',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTotalCard() {
+  Widget _buildTotalCard(int total) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEF),
+        color: AppColors.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Icon(Icons.groups, color: AppColors.primary, size: 50),
             ],
           ),
-          SizedBox(height: 5),
-          Align(
+          const SizedBox(height: 5),
+          const Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Joinings',
+              'Total Joinings',
               style: TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
@@ -103,8 +208,8 @@ class AdminJoiningsSection extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              '920',
-              style: TextStyle(
+              '$total',
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 48,
@@ -116,41 +221,16 @@ class AdminJoiningsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentJoiningsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Recent joinings',
-          style: TextStyle(
-            color: Color(0xFF1A3358),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 15),
-        _buildJoinTile('Supervisor', 'Admin ID: 5fttt45'),
-        _buildJoinTile('Supervisor', 'Admin ID: fr5677'),
-        _buildJoinTile('Employee', 'Supervisor ID: rf4575'),
-        _buildJoinTile('Employee', 'Supervisor ID: rf4575'),
-        _buildJoinTile('Customer', 'Employee ID: gh45354'),
-        _buildJoinTile('Customer', 'Employee ID: gh45354'),
-        _buildJoinTile('Customer', 'Employee ID: gh45354'),
-        _buildJoinTile('Customer', 'Employee ID: gh45354'),
-      ],
-    );
-  }
-
-  Widget _buildJoinTile(String role, String id) {
+  Widget _buildJoinTile(Joining joining) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -158,34 +238,59 @@ class AdminJoiningsSection extends StatelessWidget {
       ),
       child: Row(
         children: [
-          RoleSpecificAvatar(label: role, size: 45),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child:
+                const Icon(Icons.person, color: AppColors.primary, size: 24),
+          ),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  role,
+                  joining.name,
                   style: const TextStyle(
-                    color: Color(0xFF1A3358),
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
                 Text(
-                  'Assunto: ...',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                  joining.role.toUpperCase(),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
+                if (joining.phone.isNotEmpty)
+                  Text(
+                    joining.phone,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
               ],
             ),
           ),
-          Text(
-            id,
-            style: const TextStyle(
-              color: Color(0xFF1A3358),
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                DateFormat('MMM d').format(joining.joinedAt),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                DateFormat('yyyy').format(joining.joinedAt),
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 10,
+                ),
+              ),
+            ],
           ),
         ],
       ),

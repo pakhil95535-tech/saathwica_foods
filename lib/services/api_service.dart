@@ -18,6 +18,9 @@ class ApiService {
     }
     // Added for ngrok support as per user requirement or best practice
     headers['ngrok-skip-browser-warning'] = 'true';
+    if (AppConfig.productApiKey.isNotEmpty) {
+      headers['x-api-key'] = AppConfig.productApiKey;
+    }
     return headers;
   }
 
@@ -108,7 +111,10 @@ class ApiService {
     };
 
     if (referralId.isNotEmpty || referredBy.isNotEmpty) {
-      payload['reffered_by'] = referralId.isNotEmpty ? referralId : referredBy;
+      final ref = referralId.isNotEmpty ? referralId : referredBy;
+      // Send both keys to match backend variations
+      payload['reffered_by'] = ref;
+      payload['referred_by'] = ref;
     }
 
     final body = jsonEncode(payload);
@@ -412,6 +418,72 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> sendOtp({
+    required String phone,
+    required String username,
+  }) async {
+    final url = Uri.parse(AppEndpoints.sendOtp);
+    final altUrl = Uri.parse(AppEndpoints.sendOtpAlternate);
+    final payload = {'phone': phone, 'username': username};
+    if (kDebugMode) {
+      print('DEBUG: Send OTP URL: $url');
+      print('DEBUG: Send OTP Payload: ${jsonEncode(payload)}');
+    }
+    try {
+      final response = await http
+          .post(url, headers: _getHeaders(), body: jsonEncode(payload))
+          .timeout(const Duration(seconds: 15));
+      if (kDebugMode) {
+        print('DEBUG: Send OTP Response Status: ${response.statusCode}');
+        print('DEBUG: Send OTP Response Body: ${response.body}');
+      }
+      if (response.statusCode == 404 || response.statusCode == 405) {
+        if (kDebugMode) {
+          print('DEBUG: Send OTP fallback URL: $altUrl');
+        }
+        final altRes = await http
+            .post(altUrl, headers: _getHeaders(), body: jsonEncode(payload))
+            .timeout(const Duration(seconds: 15));
+        if (kDebugMode) {
+          print('DEBUG: Send OTP Fallback Status: ${altRes.statusCode}');
+          print('DEBUG: Send OTP Fallback Body: ${altRes.body}');
+        }
+        return _handleResponse(altRes);
+      }
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Network error: ${e.toString()}', 0);
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyOtp({
+    required String phone,
+    required String otp,
+  }) async {
+    final url = Uri.parse(AppEndpoints.verifyOtp).replace(
+      queryParameters: {
+        'mobile': phone,
+        'otp': otp,
+      },
+    );
+    if (kDebugMode) {
+      print('DEBUG: Verify OTP GET URL: $url');
+    }
+    try {
+      final response = await http
+          .get(url, headers: _getHeaders())
+          .timeout(const Duration(seconds: 15));
+      if (kDebugMode) {
+        print('DEBUG: Verify OTP Response Status: ${response.statusCode}');
+        print('DEBUG: Verify OTP Response Body: ${response.body}');
+      }
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Network error: ${e.toString()}', 0);
+    }
+  }
   static Future<List<Map<String, dynamic>>> fetchProductsRaw() async {
     final primaryUrl = Uri.parse(AppEndpoints.fetchProducts);
     final headers = {
@@ -466,33 +538,32 @@ class ApiService {
           (item['description'] ?? item['desc'] ?? item['about'] ?? '')
               .toString();
 
-      // Price Logic — safely parse strings or nums
-      final sellingPriceNum =
-          (item['selling_price'] ?? item['price'] ?? item['mrp'] ?? 0);
-      final price = (sellingPriceNum is num)
-          ? sellingPriceNum.toDouble()
-          : (double.tryParse(sellingPriceNum.toString()) ?? 0.0);
-
-      final mrpNum = (item['mrp'] ?? item['original_price'] ?? sellingPriceNum);
-      final originalPrice = (mrpNum is num)
-          ? mrpNum.toDouble()
-          : (double.tryParse(mrpNum.toString()) ?? price);
-
-      final discountRaw = item['discount'] ?? item['discountPercentage'] ?? 0;
-      double discountPercentage = (discountRaw is num)
-          ? discountRaw.toDouble()
-          : (double.tryParse(discountRaw.toString()) ?? 0.0);
-      if (discountPercentage == 0.0 &&
-          originalPrice > price &&
-          originalPrice > 0) {
-        discountPercentage = ((originalPrice - price) / originalPrice) * 100;
-      }
+      // Price Logic — treat 'price' as MRP, 'discount' as absolute discount
+      final rawPriceNum = (item['price'] ?? item['mrp'] ?? 0);
+      final originalPrice = (rawPriceNum is num)
+          ? rawPriceNum.toDouble()
+          : (double.tryParse(rawPriceNum.toString()) ?? 0.0);
+      final discountNum = (item['discount'] ?? 0);
+      final discountAmount = (discountNum is num)
+          ? discountNum.toDouble()
+          : (double.tryParse(discountNum.toString()) ?? 0.0);
+      final effectivePrice =
+          (originalPrice - discountAmount).clamp(0.0, double.infinity);
+      final discountPercentage = originalPrice > 0
+          ? (discountAmount / originalPrice) * 100.0
+          : 0.0;
 
       final image =
           (item['image'] ?? item['image_url'] ?? item['url'] ?? '').toString();
       final imagesValue = item['images'];
       final List<String> images = (imagesValue is List)
-          ? imagesValue.map((e) => e.toString()).toList()
+          ? imagesValue
+              .map((e) {
+                if (e is Map && e['url'] != null) return e['url'].toString();
+                return e.toString();
+              })
+              .where((u) => u.isNotEmpty)
+              .toList()
           : (image.isNotEmpty ? [image] : []);
 
       // Determine category
@@ -530,11 +601,34 @@ class ApiService {
       final reviewCount = (reviewCountVal is num)
           ? reviewCountVal.toInt()
           : (int.tryParse(reviewCountVal.toString()) ?? 0);
+
+      // Role earnings percentages
+      final adminPercRaw = item['adminEarningPercentage'] ?? 0;
+      final supPercRaw = item['supervisorEarningPercentage'] ?? 0;
+      final empPercRaw = item['employeeEarningPercentage'] ?? 0;
+      final adminPerc = (adminPercRaw is num)
+          ? adminPercRaw.toDouble()
+          : (double.tryParse(adminPercRaw.toString()) ?? 0.0);
+      final supPerc = (supPercRaw is num)
+          ? supPercRaw.toDouble()
+          : (double.tryParse(supPercRaw.toString()) ?? 0.0);
+      final empPerc = (empPercRaw is num)
+          ? empPercRaw.toDouble()
+          : (double.tryParse(empPercRaw.toString()) ?? 0.0);
+
+      final adminPrice = (effectivePrice * (1 - adminPerc / 100))
+          .clamp(0.0, double.infinity);
+      final supervisorPrice = (effectivePrice * (1 - supPerc / 100))
+          .clamp(0.0, double.infinity);
+      final employeePrice = (effectivePrice * (1 - empPerc / 100))
+          .clamp(0.0, double.infinity);
+      final customerPrice = effectivePrice;
+
       list.add(Product(
         id: id,
         name: name,
         description: description,
-        price: price,
+        price: customerPrice,
         originalPrice: originalPrice,
         discountPercentage: discountPercentage,
         image:
@@ -544,6 +638,10 @@ class ApiService {
         unit: unit,
         rating: rating,
         reviewCount: reviewCount,
+        price1: adminPrice,
+        price2: employeePrice,
+        price3: supervisorPrice,
+        price4: customerPrice,
       ));
     }
     return list;

@@ -25,18 +25,37 @@ class CustomDrawer extends StatelessWidget {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               width: double.infinity,
               decoration: const BoxDecoration(
                 border: Border(
                   bottom: BorderSide(color: AppColors.mediumGray, width: 1),
                 ),
               ),
-              child: Text(
-                AppStrings.appName,
-                style: AppTextStyles.headline3.copyWith(
-                  color: AppColors.primary,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Image.asset(
+                    AppAssets.appLogo,
+                    height: 40,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    AppStrings.newBrandName,
+                    style: AppTextStyles.headline3.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    role.toUpperCase(),
+                    style: AppTextStyles.subtitle1.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -51,6 +70,10 @@ class CustomDrawer extends StatelessWidget {
                       Get.toNamed(AppRoutes.superAdminProfile);
                     }),
                   ] else if (role == 'admin') ...[
+                    _buildMenuItem('My Profile', Icons.person_outline, () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.customerProfile);
+                    }),
                     _buildMenuItem(
                         'My Earnings', Icons.account_balance_wallet_outlined,
                         () {
@@ -61,44 +84,53 @@ class CustomDrawer extends StatelessWidget {
                       Get.back();
                       Get.toNamed(AppRoutes.adminJoinings);
                     }),
-                    _buildMenuItem('My Orders', Icons.inventory_2_outlined, () {
-                      Get.back();
-                      Get.toNamed('/orders');
-                    }),
-                    _buildMenuItem('My Wishlist', Icons.favorite_border, () {
-                      Get.back();
-                      Get.toNamed(AppRoutes.wishlist);
-                    }),
                   ] else if (role == 'employee') ...[
+                    _buildMenuItem('My Profile', Icons.person_outline, () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.customerProfile);
+                    }),
                     _buildMenuItem(
                         'My Earnings', Icons.account_balance_wallet_outlined,
                         () {
                       Get.back();
-                      Get.toNamed(AppRoutes.employeeDashboard, arguments: 0);
+                      Get.toNamed(AppRoutes.employeeEarnings);
                     }),
                     _buildMenuItem('My Joinings', Icons.people_outline, () {
                       Get.back();
-                      Get.toNamed(AppRoutes.employeeDashboard, arguments: 2);
+                      Get.toNamed(AppRoutes.employeeJobs);
                     }),
-                    _buildMenuItem('My Orders', Icons.inventory_2_outlined, () {
+                  ] else if (role == 'supervisor') ...[
+                    _buildMenuItem('My Profile', Icons.person_outline, () {
                       Get.back();
-                      Get.toNamed('/orders');
+                      Get.toNamed(AppRoutes.supervisorProfile);
                     }),
-                    _buildMenuItem('My Wishlist', Icons.favorite_border, () {
+                    _buildMenuItem(
+                        'My Earnings', Icons.account_balance_wallet_outlined,
+                        () {
                       Get.back();
-                      Get.toNamed(AppRoutes.wishlist);
+                      Get.toNamed(AppRoutes.supervisorEarnings);
+                    }),
+                    _buildMenuItem('My Joinings', Icons.people_outline, () {
+                      Get.back();
+                      Get.toNamed(AppRoutes.supervisorJoinings);
                     }),
                   ] else ...[
                     // Customer (and others default to this)
-                    _buildMenuItem('My Orders', Icons.inventory_2_outlined, () {
+                    _buildMenuItem('My Profile', Icons.person_outline, () {
                       Get.back();
-                      Get.toNamed('/orders');
-                    }),
-                    _buildMenuItem('My Wishlist', Icons.favorite_border, () {
-                      Get.back();
-                      Get.toNamed(AppRoutes.wishlist);
+                      Get.toNamed(AppRoutes.customerProfile);
                     }),
                   ],
+                  
+                  // Common items for everyone
+                  _buildMenuItem('My Orders', Icons.inventory_2_outlined, () {
+                    Get.back();
+                    Get.toNamed('/orders');
+                  }),
+                  _buildMenuItem('My Wishlist', Icons.favorite_border, () {
+                    Get.back();
+                    Get.toNamed(AppRoutes.wishlist);
+                  }),
                   _buildMenuItem('Logout', Icons.logout, () {
                     authController.logout();
                   }),

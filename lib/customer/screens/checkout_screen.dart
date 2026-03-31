@@ -346,6 +346,22 @@ class CheckoutScreen extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Get.toNamed(AppRoutes.paymentGateway);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.primary),
+                      foregroundColor: AppColors.primary,
+                    ),
+                    child: const Text('Pay Now'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 // Place Order Button
                 SizedBox(
                   width: double.infinity,

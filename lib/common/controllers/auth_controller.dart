@@ -42,7 +42,10 @@ class AuthController extends GetxController {
       isLoggedIn.value = true;
       await _storage.write(key: 'user_id', value: 'superadmin');
       await _storage.write(key: 'user_type', value: 'superadmin');
-      // No token for hardcoded superadmin, or maybe mock one
+      
+      if (Get.isRegistered<CartController>()) {
+        Get.find<CartController>().updateUserId('superadmin');
+      }
       return true;
     }
 
@@ -98,7 +101,9 @@ class AuthController extends GetxController {
 
       // Fetch addresses after successful login
       if (Get.isRegistered<CartController>()) {
-        await Get.find<CartController>().fetchAddressesFromBackend();
+        final cart = Get.find<CartController>();
+        cart.updateUserId(user.id);
+        await cart.fetchAddressesFromBackend();
       }
       
       // Refresh products based on new user role/token
@@ -173,6 +178,10 @@ class AuthController extends GetxController {
         final tokenStr = token.toString();
         await _storage.write(key: 'user_token', value: tokenStr);
         ApiService.authToken = tokenStr;
+      }
+
+      if (Get.isRegistered<CartController>()) {
+        Get.find<CartController>().updateUserId(user.id);
       }
 
       // Refresh products based on new user role/token

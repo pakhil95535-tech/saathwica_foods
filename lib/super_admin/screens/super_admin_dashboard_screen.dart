@@ -62,9 +62,19 @@ class SuperAdminDashboardScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 _buildDashboardButton(
                   context,
-                  'Add Product',
-                  Icons.add_shopping_cart,
-                  () => Get.toNamed(AppRoutes.createProduct),
+                  'Upcoming Services',
+                  Icons.miscellaneous_services,
+                  () {
+                    Get.snackbar(
+                      'Information',
+                      'Upcoming Services',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: AppColors.primary,
+                      colorText: AppColors.white,
+                      margin: const EdgeInsets.all(15),
+                      duration: const Duration(seconds: 2),
+                    );
+                  },
                 ),
               ],
             ),

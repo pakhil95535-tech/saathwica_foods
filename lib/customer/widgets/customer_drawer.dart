@@ -63,7 +63,7 @@ class CustomerDrawer extends StatelessWidget {
                   }),
                   _buildMenuItem('My Orders', Icons.inventory_2_outlined, () {
                     Get.back();
-                    Get.toNamed('/orders');
+                    Get.toNamed(AppRoutes.orders);
                   }),
                   _buildMenuItem('My Wishlist', Icons.favorite_border, () {
                     Get.back();

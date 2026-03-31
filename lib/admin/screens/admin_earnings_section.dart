@@ -1,11 +1,56 @@
 // lib/screens/admin/admin_earnings_section.dart
-
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../common/utils/constants.dart';
+import '../../common/controllers/auth_controller.dart';
+import '../../common/models/earnings.dart';
+import '../../services/earnings_service.dart';
 
-class AdminEarningsSection extends StatelessWidget {
+class AdminEarningsSection extends StatefulWidget {
   final VoidCallback onBackPressed;
   const AdminEarningsSection({super.key, required this.onBackPressed});
+
+  @override
+  State<AdminEarningsSection> createState() => _AdminEarningsSectionState();
+}
+
+class _AdminEarningsSectionState extends State<AdminEarningsSection> {
+  final _auth = Get.find<AuthController>();
+  EarningsSummary? _summary;
+  bool _loading = false;
+  String _error = '';
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  Future<void> _fetch() async {
+    final idStr = _auth.currentUser.value?.id ?? '';
+    final role = _auth.currentUser.value?.userType.toLowerCase() ?? 'admin';
+    final id = int.tryParse(idStr);
+    if (id == null) {
+      setState(() {
+        _error = 'Invalid user';
+      });
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      final s = await EarningsService.fetchEarnings(
+        userId: id,
+        role: role,
+      );
+      setState(() => _summary = s);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +64,25 @@ class AdminEarningsSection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 10),
+                if (_loading)
+                  const LinearProgressIndicator(minHeight: 2)
+                else
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      onPressed: _fetch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                      ),
+                      child: const Text('Refresh',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                if (_error.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(_error, style: const TextStyle(color: Colors.red)),
+                ],
                 const SizedBox(height: 20),
                 _buildTotalCard(),
                 const SizedBox(height: 30),
@@ -43,7 +107,7 @@ class AdminEarningsSection extends StatelessWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF8B6C3F)),
-            onPressed: onBackPressed,
+            onPressed: widget.onBackPressed,
           ),
           const Expanded(
             child: Center(
@@ -57,7 +121,7 @@ class AdminEarningsSection extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 48), // Balance for centering
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -78,17 +142,17 @@ class AdminEarningsSection extends StatelessWidget {
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Icon(Icons.account_balance_wallet,
                   color: AppColors.primary, size: 45),
             ],
           ),
-          SizedBox(height: 10),
-          Align(
+          const SizedBox(height: 10),
+          const Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Earnings',
@@ -101,24 +165,32 @@ class AdminEarningsSection extends StatelessWidget {
           ),
           Align(
             alignment: Alignment.centerRight,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '₹ ',
-                  style: TextStyle(
-                    color: AppColors.primary,
+                  '₹ ${(_summary?.total ?? 0).toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.green,
                     fontWeight: FontWeight.bold,
-                    fontSize: 24,
+                    fontSize: 36,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Pending: ₹ ${(_summary?.pending ?? 0).toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
                   ),
                 ),
                 Text(
-                  '94,000',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 48,
+                  'Completed: ₹ ${(_summary?.completed ?? 0).toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -130,9 +202,21 @@ class AdminEarningsSection extends StatelessWidget {
   }
 
   Widget _buildRecentTransactionsSection() {
+    final txns = _summary?.transactions ?? const <EarningTransaction>[];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Text(
+          'Supervisor Revenue',
+          style: TextStyle(
+            color: Colors.blue,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ..._buildBreakdownTiles(),
+        const SizedBox(height: 16),
         const Text(
           'Recent transactions',
           style: TextStyle(
@@ -142,19 +226,24 @@ class AdminEarningsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 15),
-        _buildTransactionTile('1,500.00', '1h'),
-        _buildTransactionTile('1,000.00', '2h'),
-        _buildTransactionTile('2,500.00', '3h'),
-        _buildTransactionTile('1,500.00', '1h'),
-        _buildTransactionTile('1,000.00', '2h'),
-        _buildTransactionTile('2,500.00', '3h'),
-        _buildTransactionTile('1,000.00', '2h'),
-        _buildTransactionTile('2,500.00', '3h'),
+        if (txns.isEmpty)
+          const Text(
+            'No transactions found',
+            style: TextStyle(color: Colors.grey),
+          )
+        else
+          ...txns.map((t) => _buildTransactionTile(
+                t.amount.toStringAsFixed(2),
+                t.createdAt,
+                t.orderStatus.isEmpty ? 'Completed' : t.orderStatus,
+                t.downlineName.isNotEmpty ? t.downlineName : 'Supervisor',
+              )),
       ],
     );
   }
 
-  Widget _buildTransactionTile(String amount, String time) {
+  Widget _buildTransactionTile(
+      String amount, DateTime when, String status, String desc) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(12),
@@ -187,14 +276,14 @@ class AdminEarningsSection extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Assunto: ...',
+                  desc.isNotEmpty ? desc : status,
                   style: TextStyle(color: Colors.grey[400], fontSize: 13),
                 ),
               ],
             ),
           ),
           Text(
-            time,
+            '${when.hour.toString().padLeft(2, '0')}:${when.minute.toString().padLeft(2, '0')}',
             style: const TextStyle(
               color: Color(0xFF1A3358),
               fontWeight: FontWeight.bold,
@@ -204,5 +293,24 @@ class AdminEarningsSection extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildBreakdownTiles() {
+    final Map<String, double> map = {};
+    for (final t in _summary?.transactions ?? const <EarningTransaction>[]) {
+      final key = t.downlineName.isNotEmpty ? t.downlineName : 'Supervisor';
+      map[key] = (map[key] ?? 0) + t.amount;
+    }
+    return map.entries
+        .map((e) => Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(e.key, style: const TextStyle(color: Colors.black87)),
+                Text('₹ ${e.value.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                        color: Colors.green, fontWeight: FontWeight.bold)),
+              ],
+            ))
+        .toList();
   }
 }

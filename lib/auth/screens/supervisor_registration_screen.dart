@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import '../../common/controllers/auth_controller.dart';
 import '../../common/utils/constants.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import '../../routes/app_routes.dart';
+import '../../services/api_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SupervisorRegistrationScreen extends StatefulWidget {
   const SupervisorRegistrationScreen({super.key});
@@ -27,6 +30,12 @@ class _SupervisorRegistrationScreenState
   final _confirmPasswordController = TextEditingController();
   bool _showPassword = false;
   bool _showConfirmPassword = false;
+  bool _otpSent = false;
+  bool _otpVerified = false;
+  bool _otpLoading = false;
+  String _otpError = '';
+  String _serverOtp = '';
+  bool _agreePolicies = false;
 
   final AuthController _authController = Get.find<AuthController>();
 
@@ -45,6 +54,17 @@ class _SupervisorRegistrationScreenState
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (!_otpVerified) {
+      Get.snackbar(
+        'Error',
+        'Please verify OTP before registering',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: AppColors.white,
+      );
+      return;
+    }
 
     if (_passwordController.text != _confirmPasswordController.text) {
       Get.snackbar(
@@ -83,6 +103,56 @@ class _SupervisorRegistrationScreenState
     }
   }
 
+  Future<void> _sendOtp() async {
+    try {
+      setState(() {
+        _otpLoading = true;
+        _otpError = '';
+      });
+      final res = await ApiService.sendOtp(
+        phone: _mobileController.text.trim(),
+        username: _nameController.text.trim(),
+      );
+      _serverOtp = (res['otp'] ?? '').toString();
+      setState(() {
+        _otpSent = true;
+      });
+      Get.snackbar('Success', 'OTP sent', snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      setState(() => _otpError = e.toString());
+    } finally {
+      setState(() => _otpLoading = false);
+    }
+  }
+
+  Future<void> _verifyOtp(String otp) async {
+    try {
+      setState(() {
+        _otpLoading = true;
+        _otpError = '';
+      });
+      if (_serverOtp.isNotEmpty && _serverOtp == otp) {
+        setState(() => _otpVerified = true);
+        Get.snackbar('Success', 'OTP Verified Successfully',
+            snackPosition: SnackPosition.BOTTOM);
+      } else {
+        setState(() => _otpError = 'Invalid OTP');
+      }
+    } catch (e) {
+      setState(() => _otpError = e.toString());
+    } finally {
+      setState(() => _otpLoading = false);
+    }
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      Get.snackbar('Error', 'Unable to open link',
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,7 +176,11 @@ class _SupervisorRegistrationScreenState
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: _authController.isLoading.value ? null : _register,
+                  onPressed: _authController.isLoading.value ||
+                          !_otpVerified ||
+                          !_agreePolicies
+                      ? null
+                      : _register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary, // Changed to primary
                     foregroundColor: AppColors.white, // Changed to white
@@ -153,23 +227,97 @@ class _SupervisorRegistrationScreenState
                     _buildLabel('Name'),
                     _buildTextField(_nameController, 'YOUR NAME'),
                     _buildLabel('Mobile Number'),
-                    _buildTextField(_mobileController, 'ENTER MOBILE NUMBER',
-                        keyboardType: TextInputType.phone),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            _mobileController,
+                            'ENTER MOBILE NUMBER',
+                            keyboardType: TextInputType.phone,
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: _otpLoading ||
+                                  !AppValidations.phoneRegex.hasMatch(
+                                      _mobileController.text.trim())
+                              ? null
+                              : _sendOtp,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                          ),
+                          child: _otpLoading
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Send OTP',
+                                  style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                    if (_otpSent) ...[
+                      const SizedBox(height: 8),
+                      _buildLabel('Enter OTP'),
+                      Builder(builder: (context) {
+                        final controller = TextEditingController();
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: controller,
+                                keyboardType: TextInputType.number,
+                                maxLength: 6,
+                                decoration: const InputDecoration(
+                                  hintText: '6 digit OTP',
+                                  counterText: '',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            OutlinedButton(
+                              onPressed: _otpLoading
+                                  ? null
+                                  : () => _verifyOtp(controller.text.trim()),
+                              child: const Text('Verify OTP'),
+                            ),
+                          ],
+                        );
+                      }),
+                      if (_otpError.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(_otpError,
+                              style:
+                                  const TextStyle(color: AppColors.error)),
+                        ),
+                    ],
                     _buildLabel('Address'),
-                    _buildTextField(_addressLine1Controller, 'LINE 1'),
+                    _buildTextField(_addressLine1Controller, 'LINE 1',
+                        enabled: _otpVerified),
                     const SizedBox(height: 12),
-                    _buildTextField(_addressLine2Controller, 'LINE 2'),
+                    _buildTextField(_addressLine2Controller, 'LINE 2',
+                        enabled: _otpVerified),
                     _buildLabel('Pin code'),
                     _buildTextField(_pincodeController, 'ENTER PINCODE',
-                        keyboardType: TextInputType.number),
-                    _buildLabel('Super Admin Referral Code'),
+                        keyboardType: TextInputType.number,
+                        enabled: _otpVerified),
+                    _buildLabel('Admin Referral Code'),
                     _buildTextField(
-                        _adminReferralIdController, 'ENTER REFERRAL CODE'),
+                        _adminReferralIdController, 'ENTER REFERRAL CODE',
+                        enabled: _otpVerified),
                     _buildLabel('Password'),
                     _buildTextField(
                       _passwordController,
                       'ENTER PASSWORD',
                       obscureText: !_showPassword,
+                      enabled: _otpVerified,
                       suffix: IconButton(
                         icon: Icon(
                           _showPassword
@@ -186,6 +334,7 @@ class _SupervisorRegistrationScreenState
                       _confirmPasswordController,
                       'CONFIRM PASSWORD',
                       obscureText: !_showConfirmPassword,
+                      enabled: _otpVerified,
                       suffix: IconButton(
                         icon: Icon(
                           _showConfirmPassword
@@ -196,6 +345,48 @@ class _SupervisorRegistrationScreenState
                         onPressed: () => setState(
                             () => _showConfirmPassword = !_showConfirmPassword),
                       ),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Checkbox(
+                          value: _agreePolicies,
+                          onChanged: (v) => setState(() {
+                            _agreePolicies = v ?? false;
+                          }),
+                          activeColor: AppColors.primary,
+                        ),
+                        Expanded(
+                          child: Wrap(
+                            children: [
+                              const Text('I agree to '),
+                              GestureDetector(
+                                onTap: () => _openUrl(AppLinks.terms),
+                                child: const Text(
+                                  'Terms & Conditions',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    decoration: TextDecoration.underline,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const Text(' & '),
+                              GestureDetector(
+                                onTap: () => _openUrl(AppLinks.privacy),
+                                child: const Text(
+                                  'Privacy Policy',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    decoration: TextDecoration.underline,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 40),
                   ],
@@ -223,7 +414,11 @@ class _SupervisorRegistrationScreenState
   }
 
   Widget _buildTextField(TextEditingController controller, String hint,
-      {bool obscureText = false, TextInputType? keyboardType, Widget? suffix}) {
+      {bool obscureText = false,
+      TextInputType? keyboardType,
+      Widget? suffix,
+      bool enabled = true,
+      ValueChanged<String>? onChanged}) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.mediumGray, // Changed to mediumGray
@@ -233,6 +428,8 @@ class _SupervisorRegistrationScreenState
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        enabled: enabled,
+        onChanged: onChanged,
         style: const TextStyle(color: Colors.black87),
         decoration: InputDecoration(
           hintText: hint,

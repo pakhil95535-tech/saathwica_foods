@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../common/utils/constants.dart';
 import '../../common/models/models.dart';
 import '../../routes/app_routes.dart';
+import '../../common/controllers/auth_controller.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class OrderConfirmationScreen extends StatefulWidget {
@@ -263,12 +264,13 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
+                        final auth = Get.find<AuthController>();
+                        final route = auth.getInitialRoute();
                         if (order != null) {
-                          // Reset to dashboard and push order details so "Back" goes to dashboard
-                          Get.offAllNamed(AppRoutes.customerDashboard);
+                          Get.offAllNamed(route);
                           Get.toNamed(AppRoutes.orderDetail, arguments: order);
                         } else {
-                          Get.offAllNamed(AppRoutes.customerDashboard);
+                          Get.offAllNamed(route);
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -296,7 +298,9 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                     height: 56,
                     child: OutlinedButton(
                       onPressed: () {
-                        Get.offAllNamed(AppRoutes.customerDashboard);
+                        final auth = Get.find<AuthController>();
+                        final route = auth.getInitialRoute();
+                        Get.offAllNamed(route);
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.primary),

@@ -1,55 +1,145 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../common/controllers/auth_controller.dart';
+import '../../common/models/joinings.dart';
+import '../../services/earnings_service.dart';
+import '../../common/utils/constants.dart';
+import 'package:intl/intl.dart';
 
-class EmployeeJobsScreen extends StatelessWidget {
+class EmployeeJobsScreen extends StatefulWidget {
   final VoidCallback? onBackPressed;
   const EmployeeJobsScreen({super.key, this.onBackPressed});
 
   @override
+  State<EmployeeJobsScreen> createState() => _EmployeeJobsScreenState();
+}
+
+class _EmployeeJobsScreenState extends State<EmployeeJobsScreen> {
+  final _auth = Get.find<AuthController>();
+  JoiningsSummary? _summary;
+  bool _loading = false;
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    final idStr = _auth.currentUser.value?.id ?? '';
+    final role = _auth.currentUser.value?.userType.toLowerCase() ?? 'employee';
+    final referralCode = _auth.currentUser.value?.referralId ?? ''; // Using referral ID as code
+
+    final id = int.tryParse(idStr);
+    if (id == null) {
+      setState(() {
+        _error = 'Invalid user';
+      });
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      // Pass referral code to service for strict filtering
+      final s = await EarningsService.fetchJoinings(
+        userId: id,
+        role: role,
+        referralCode: referralCode,
+      );
+      setState(() => _summary = s);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
+      backgroundColor: AppColors.white,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFFB08924)),
-          onPressed: onBackPressed ?? () => Get.back(),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primary),
+          onPressed: widget.onBackPressed ?? () => Get.back(),
         ),
-        title: const Text('My joinings',
+        title: const Text('My Joinings',
             style: TextStyle(
-              color: Color(0xFF1A3358),
+              color: AppColors.primary,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             )),
-        backgroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.primary),
+            onPressed: _fetch,
+            tooltip: 'Refresh',
+          ),
+        ],
+        backgroundColor: AppColors.white,
         elevation: 0,
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_error, style: const TextStyle(color: Colors.red)),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _fetch,
+              child: const Text('Retry'),
+            )
+          ],
+        ),
+      );
+    }
+
+    final total = _summary?.total ?? 0;
+    final joinings = _summary?.joinings ?? [];
+
+    return RefreshIndicator(
+      onRefresh: _fetch,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Joinings Summary Card (Image 6)
+            // Joinings Summary Card
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFFBEF),
+                color: AppColors.primary.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: const Color(0xFFF0E0B0), width: 1),
+                border: Border.all(
+                    color: AppColors.primary.withOpacity(0.1), width: 1),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
+                  const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.people, size: 45, color: Color(0xFFB08924)),
+                      Icon(Icons.people, size: 45, color: AppColors.primary),
                       SizedBox(height: 8),
                       Text(
-                        'Joinings',
+                        'Total Joinings',
                         style: TextStyle(
-                          color: Color(0xFFB08924),
+                          color: AppColors.primary,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -57,9 +147,9 @@ class EmployeeJobsScreen extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    '400',
-                    style: TextStyle(
-                      color: Color(0xFFB08924),
+                    '$total',
+                    style: const TextStyle(
+                      color: AppColors.primary,
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
                     ),
@@ -73,38 +163,47 @@ class EmployeeJobsScreen extends StatelessWidget {
             const Text(
               'Recent joinings',
               style: TextStyle(
-                color: Color(0xFF1A3358),
-                fontSize: 17,
+                color: AppColors.textPrimary,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 15),
 
-            // Joinings List
-            _buildJoiningItem('Customer', 'Employee ID: gh45354', '1h'),
-            _buildJoiningItem('Customer', 'Employee ID: gh45354', '2h'),
-            _buildJoiningItem('Customer', 'Employee ID: gh45354', '3h'),
-            _buildJoiningItem('Customer', 'Employee ID: gh45354', '1h'),
-            _buildJoiningItem('Customer', 'Employee ID: gh45354', '2h'),
-            _buildJoiningItem('Customer', 'Employee ID: gh45354', '3h'),
-            _buildJoiningItem('Customer', 'Employee ID: gh45354', '2h'),
-            _buildJoiningItem('Customer', 'Employee ID: gh45354', '3h'),
+            if (joinings.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Text('No joinings yet'),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: joinings.length,
+                itemBuilder: (context, index) {
+                  final joining = joinings[index];
+                  return _buildJoiningItem(joining);
+                },
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildJoiningItem(String name, String id, String time) {
+  Widget _buildJoiningItem(Joining joining) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.lightGray.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -113,48 +212,46 @@ class EmployeeJobsScreen extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 45,
-            height: 45,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF9F9F9),
-              borderRadius: BorderRadius.circular(6),
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            padding: const EdgeInsets.all(5),
-            child: Image.asset(
-              'assets/images/customerlogo.png',
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.person, color: Colors.grey),
-            ),
+            child:
+                const Icon(Icons.person, color: AppColors.primary, size: 20),
           ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  joining.name,
                   style: const TextStyle(
-                    color: Color(0xFF1A3358),
                     fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
-                  id,
-                  style: const TextStyle(
-                    color: Color(0xFF1A3358),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-                const Text(
-                  'Assunto: ...',
+                  joining.role.toUpperCase(),
                   style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
+                if (joining.phone.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    joining.phone,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -162,17 +259,19 @@ class EmployeeJobsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                time,
+                DateFormat('MMM d').format(joining.joinedAt),
                 style: const TextStyle(
-                  color: Color(0xFF1A3358),
-                  fontSize: 12,
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 5),
-              const Text(
-                '                                ', // Matching layout spacing if needed
-                style: TextStyle(fontSize: 10),
+              Text(
+                DateFormat('yyyy').format(joining.joinedAt),
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),

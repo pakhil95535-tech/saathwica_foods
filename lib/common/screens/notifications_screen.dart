@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../utils/constants.dart';
+import '../../routes/app_routes.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -87,7 +88,7 @@ class NotificationsScreen extends StatelessWidget {
                   const SizedBox(height: 5),
                   GestureDetector(
                     onTap: () {
-                      // TODO: Implement historical notifications
+                      Get.toNamed(AppRoutes.historicalNotifications);
                     },
                     child: const Text(
                       'Go to historical notifications.',

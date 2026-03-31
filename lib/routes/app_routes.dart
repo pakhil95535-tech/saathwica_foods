@@ -35,6 +35,9 @@ import '../super_admin/screens/super_admin_dashboard_screen.dart';
 import '../super_admin/screens/super_admin_profile_screen.dart';
 import '../super_admin/screens/create_admin_screen.dart';
 import '../common/screens/shop_now_screen.dart'; // Added
+import '../common/screens/fake_payment_screen.dart';
+import '../common/screens/payment_result_screen.dart';
+import '../common/screens/historical_notifications_screen.dart';
 
 
 import '../customer/screens/wishlist_screen.dart';
@@ -75,9 +78,12 @@ class AppRoutes {
   static const String createAdmin = '/create-admin';
   static const String createUser = '/create-user';
   static const String shopNow = '/shop-now'; // Added for internal roles
+  static const String paymentGateway = '/payment-gateway';
+  static const String paymentResult = '/payment-result';
 
   static const String adminEarnings = '/admin-earnings';
   static const String adminJoinings = '/admin-joinings';
+  static const String historicalNotifications = '/historical-notifications';
 
   static final routes = [
     GetPage(
@@ -258,6 +264,21 @@ class AppRoutes {
     GetPage(
       name: shopNow,
       page: () => const ShopNowScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: paymentGateway,
+      page: () => const FakePaymentScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: paymentResult,
+      page: () => const PaymentResultScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: historicalNotifications,
+      page: () => const HistoricalNotificationsScreen(),
       transition: Transition.rightToLeft,
     ),
   ];

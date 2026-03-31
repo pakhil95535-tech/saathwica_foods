@@ -300,6 +300,26 @@ class AppEndpoints {
   static String get getUserAddresses => '$baseUrl/get-addresses';
   static String get fetchProducts => '$baseUrl/product/fetch-products';
   static String get createOrder => '$baseUrl/order/place-order';
+  static String get earningHistory => '$baseUrl/user/earning-history';
+  static String get myJoinings => '$baseUrl/admin/get-my-details';
+  static String get sendOtp =>
+      'https://single-vendor-e-commerce-node.onrender.com/send-otp';
+  static String get verifyOtp =>
+      'https://single-vendor-e-commerce-node.onrender.com/verify-otp';
+  static String get sendOtpAlternate =>
+      'https://single-vendor-e-commerce-node.onrender.com/get-otp';
+}
+
+class AppLinks {
+  static const terms =
+      'https://www.invtechnologies.in/privacypolicy.html';
+  static const privacy =
+      'https://www.invtechnologies.in/privacypolicy.html';
+}
+
+class AppConfig {
+  static const String productApiKey =
+      String.fromEnvironment('PRODUCT_API_KEY', defaultValue: '');
 }
 
 class AppValidations {
